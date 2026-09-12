@@ -126,25 +126,11 @@ chroot "$TARGET_MNT" grub-install --target=x86_64-efi --efi-directory=/boot/efi 
 	--bootloader-id=ubuntu-lite --recheck 2>/dev/null || true
 chroot "$TARGET_MNT" update-grub 2>&1 | grep -v "^Found" || true
 
-# ---- 7. seed docker images straight into the target's docker store -----------
+# ---- 7. docker image seeds: loaded by lite-seed-images.service on first boot ------
 if ls "$ISO"/seed/docker/*.tar >/dev/null 2>&1; then
-	log "seeding docker images"
-	mkdir -p "$TARGET_MNT/var/lib/docker"
-	dockerd --data-root "$TARGET_MNT/var/lib/docker" --pidfile /run/lite-dockerd.pid \
-		-H unix:///run/lite-docker.sock --iptables=false --ip6tables=false --bridge=none \
-		>/run/lite-dockerd.log 2>&1 &
-	for i in $(seq 1 30); do [ -S /run/lite-docker.sock ] && break; sleep 1; done
-	if [ -S /run/lite-docker.sock ]; then
-		for t in "$ISO"/seed/docker/*.tar; do
-			DOCKER_HOST=unix:///run/lite-docker.sock docker load -qi "$t" || warn "failed to load $t"
-		done
-		kill "$(cat /run/lite-dockerd.pid)" 2>/dev/null || true
-		for i in $(seq 1 30); do [ -e /run/lite-dockerd.pid ] || break; sleep 1; done
-	else
-		warn "dockerd did not start; images will be loaded on first boot instead"
-		mkdir -p "$TARGET_MNT/var/lib/ubuntu-lite/seed"
-		cp "$ISO"/seed/docker/*.tar "$TARGET_MNT/var/lib/ubuntu-lite/seed/"
-	fi
+	log "copying docker image seeds (loaded on first boot)"
+	mkdir -p "$TARGET_MNT/var/lib/ubuntu-lite/seed"
+	cp "$ISO"/seed/docker/*.tar "$TARGET_MNT/var/lib/ubuntu-lite/seed/"
 fi
 
 # ---- 8. finish ---------------------------------------------------------------

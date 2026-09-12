@@ -38,9 +38,10 @@ Decisions taken with the owner, and why.
 * **GPG signed apt repo.** `make keys` once; the image trusts the public key,
   Nexus signs with the private one. Without the key the build still works but
   marks the source `Trusted: yes` and warns.
-* **Docker seeding at install time.** The installer starts a temporary
-  `dockerd` with `--data-root` on the target disk and loads the bundled image
-  tars, so `docker run postgres` works before Nexus is even populated.
+* **Docker seeding on first boot.** The installer copies the bundled image
+  tars to `/var/lib/ubuntu-lite/seed`; `lite-seed-images.service` loads them
+  with the real Docker on first boot and deletes them, so `docker run
+  postgres` works before Nexus is even populated.
 
 Things deliberately left out: snapd, cloud-init, unattended-upgrades,
 ubuntu-advantage-tools, apport, whoopsie, popularity-contest, NetworkManager,

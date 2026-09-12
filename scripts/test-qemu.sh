@@ -19,7 +19,17 @@ common=(qemu-system-x86_64 $ACCEL -cpu max -smp "$(nproc)" -m "$MEM" -machine q3
 	-drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" -drive if=pflash,format=raw,file="$VARS"
 	-drive if=none,id=hd,file="$DISK",format=qcow2 -device virtio-blk-pci,drive=hd,bootindex=1
 	-device virtio-net-pci,netdev=n0 -netdev user,id=n0,hostfwd=tcp::2222-:22
-	-device virtio-rng-pci -no-reboot)
+	-device virtio-rng-pci -no-reboot -monitor unix:"$OUT/test-mon.sock",server,nowait)
+powerdown() { # clean ACPI shutdown so first-boot writes reach the disk
+	python3 - "$OUT/test-mon.sock" <<-'PY' 2>/dev/null || true
+	import socket,sys,time
+	s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1]); time.sleep(0.5); s.recv(4096)
+	s.sendall(b"system_powerdown\n"); time.sleep(1); s.close()
+	PY
+	local i=0
+	while kill -0 "$QPID" 2>/dev/null && [ $i -lt 180 ]; do sleep 2; i=$((i + 2)); done
+	kill "$QPID" 2>/dev/null || true; wait "$QPID" 2>/dev/null || true
+}
 # the ISO is presented as a USB stick, exactly like on real hardware
 usb_iso() { echo -drive if=none,id=usb,file="$1",format=raw,readonly=on -device qemu-xhci -device usb-storage,drive=usb,bootindex=0; }
 
@@ -52,16 +62,18 @@ case "${1:-}" in
 		if wait_for "installation complete" "$TIMEOUT"; then
 			echo "PASS: installer finished"; wait $QPID || true; exit 0
 		fi
-		echo "FAIL: installer did not finish within ${TIMEOUT}s"; tail -n 40 "$LOG"; kill $QPID 2>/dev/null || true; exit 1 ;;
+		echo "FAIL: installer did not finish within ${TIMEOUT}s"; tail -n 40 "$LOG"; powerdown; exit 1 ;;
 	boot)
 		: > "$LOG"
 		"${common[@]}" -display none -serial "file:$LOG" &
 		QPID=$!
 		if wait_for " login: " "$TIMEOUT"; then
 			echo "PASS: installed system reached login prompt"; grep -a "login:" "$LOG" | head -n1
-			sleep 5; kill $QPID 2>/dev/null || true; wait $QPID 2>/dev/null || true; exit 0
+			wait_for "lite: seed images done" 900 && grep -a "lite: seed images done" "$LOG" | tail -n1 || echo "note: seed-images marker not seen"
+			grep -a "lite: first boot setup done" "$LOG" >/dev/null && echo "PASS: first boot setup ran"
+			powerdown; exit 0
 		fi
-		echo "FAIL: no login prompt"; tail -n 40 "$LOG"; kill $QPID 2>/dev/null || true; exit 1 ;;
+		echo "FAIL: no login prompt"; tail -n 40 "$LOG"; powerdown; exit 1 ;;
 	run)
 		exec "${common[@]}" -display none -serial mon:stdio ;;
 	*) sed -n '2,6p' "$0"; exit 1 ;;

@@ -1,9 +1,9 @@
 [Unit]
-Description=ubuntu-lite first boot setup (ssh host keys, seed docker images)
+Description=ubuntu-lite first boot setup (ssh host keys)
 ConditionPathExists=!/var/lib/ubuntu-lite/firstboot.done
 ConditionKernelCommandLine=!boot=lite
 After=local-fs.target
-Before=ssh.service docker.service
+Before=ssh.service
 
 [Service]
 Type=oneshot

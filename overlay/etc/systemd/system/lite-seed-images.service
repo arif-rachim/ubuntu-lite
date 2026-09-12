@@ -1,0 +1,14 @@
+[Unit]
+Description=ubuntu-lite: load bundled docker images (first boot)
+ConditionPathExistsGlob=/var/lib/ubuntu-lite/seed/*.tar
+ConditionKernelCommandLine=!boot=lite
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/ubuntu-lite/seed-images.sh
+TimeoutStartSec=30min
+
+[Install]
+WantedBy=multi-user.target

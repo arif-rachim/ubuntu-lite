@@ -355,6 +355,8 @@ stage_customize() {
 	if ! in_chroot id "$USERNAME" >/dev/null 2>&1; then
 		in_chroot useradd -m -s /bin/bash -G sudo,docker,video,audio,render,plugdev "$USERNAME"
 	fi
+	# re-runs of this stage must still pick up new /etc/skel files for the existing user
+	in_chroot sh -c "cp -a /etc/skel/. /home/$USERNAME/ && chown -R $USERNAME:$USERNAME /home/$USERNAME"
 	in_chroot usermod -p "$(openssl passwd -6 "$USER_PASSWORD")" "$USERNAME"
 	in_chroot chage -d 0 "$USERNAME"
 	in_chroot passwd -l root >/dev/null
@@ -389,7 +391,7 @@ stage_customize() {
 	in_chroot /usr/lib/ubuntu-lite/lite-setup --apply --offline >/dev/null
 
 	# services
-	in_chroot systemctl enable ssh docker containerd nftables systemd-networkd systemd-resolved lite-installer lite-firstboot >/dev/null 2>&1
+	in_chroot systemctl enable ssh docker containerd nftables systemd-networkd systemd-resolved lite-installer lite-firstboot lite-seed-images >/dev/null 2>&1
 	in_chroot systemctl mask apt-daily.timer apt-daily-upgrade.timer motd-news.timer e2scrub_all.timer systemd-networkd-wait-online.service >/dev/null 2>&1 || true
 	in_chroot systemctl disable getty@tty7.service >/dev/null 2>&1 || true
 	ln -sf ../run/systemd/resolve/stub-resolv.conf "$ROOTFS/etc/resolv.conf"
