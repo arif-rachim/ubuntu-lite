@@ -34,6 +34,8 @@ the fix; do not guess.
 | Symptom | Check | Fix |
 |---|---|---|
 | No IP address | `networkctl status`; `ip a` | Cable/DHCP. Static: `/etc/netplan/01-lite.yaml` then `sudo netplan apply`. |
+| No `wlan0` device | `dmesg | grep -iE 'brcmfmac|iwlwifi|firmware'`; `lspci -nn | grep -i net` | Missing firmware package for that chip: Intel → uncomment `linux-firmware-intel-wireless` in `firmware.txt` (repo); `rfkill unblock wifi`. |
+| `iwctl` connects but no IP | `networkctl status wlan0` | `/etc/systemd/network/20-wifi.network` must match `wl*`; `sudo networkctl reconfigure wlan0`. |
 | `apt update`: "Could not resolve nexus..." | `sudo lite-setup --show`; `getent hosts <nexus host>` | No DNS: set `NEXUS_IP` (or `EXTRA_HOSTS`) with `sudo lite-setup`. |
 | `apt update`: certificate verify failed | `curl -v https://<nexus>/` | Office CA missing → `/usr/local/share/ca-certificates/office-ca.crt` + `sudo update-ca-certificates`, or `config/ca/` before the next build (repo). |
 | `apt update`: NO_PUBKEY / not signed | `/etc/apt/sources.list.d/nexus.sources` | Image built without `make keys`, or key in Nexus differs from `config/nexus/apt-signing.pub.asc`. Rebuild with the right key (repo). |

@@ -6,6 +6,8 @@ font pango:DejaVu Sans 10
 
 output * bg #1d2021 solid_color
 input type:keyboard xkb_layout us
+# Laptops without a physical Esc (MacBook Pro Touch Bar): uncomment to make Caps Lock send Escape
+# input type:keyboard xkb_options caps:escape
 input type:touchpad {
 	tap enabled
 	natural_scroll enabled
@@ -77,6 +79,8 @@ floating_modifier $mod normal
 bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
 bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
 bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym XF86MonBrightnessUp exec brightnessctl set +10%
+bindsym XF86MonBrightnessDown exec brightnessctl set 10%-
 
 bar {
 	position bottom

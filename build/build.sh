@@ -200,6 +200,7 @@ stage_packages() {
 
 	local list
 	list=$(pkgs "$ROOT"/config/packages/base.txt "$ROOT"/config/packages/docker.txt "$ROOT"/config/packages/gui.txt "$ROOT"/config/packages/tools.txt "$ROOT"/config/packages/corporate.txt)
+	[ "${PROFILE_LAPTOP:-1}" = 1 ] && list="$list"$'\n'"$(pkgs "$ROOT/config/packages/laptop.txt")"
 	case "${FIRMWARE_MODE:-select}" in
 		full) list="$list"$'\n'"linux-firmware" ;;
 		select) list="$list"$'\n'"$(pkgs "$ROOT/config/packages/firmware.txt")" ;;
@@ -422,6 +423,7 @@ stage_customize() {
 
 	# services
 	in_chroot systemctl enable ssh docker containerd nftables systemd-networkd systemd-resolved lite-installer lite-firstboot lite-seed-images >/dev/null 2>&1
+	[ -f "$ROOTFS/usr/lib/systemd/system/iwd.service" ] && in_chroot systemctl enable iwd >/dev/null 2>&1
 	in_chroot systemctl mask apt-daily.timer apt-daily-upgrade.timer motd-news.timer e2scrub_all.timer systemd-networkd-wait-online.service >/dev/null 2>&1 || true
 	in_chroot systemctl disable getty@tty7.service >/dev/null 2>&1 || true
 	ln -sf ../run/systemd/resolve/stub-resolv.conf "$ROOTFS/etc/resolv.conf"

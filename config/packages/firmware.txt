@@ -8,6 +8,9 @@ linux-firmware-intel-misc
 linux-firmware-realtek
 linux-firmware-misc
 firmware-sof-signed
-# Not included on purpose (no Wi-Fi, no NVIDIA): linux-firmware-intel-wireless,
-# linux-firmware-nvidia-graphics, linux-firmware-*-wireless, mediatek, qualcomm,
-# mellanox, marvell, qlogic, netronome. Add them here if a machine needs one.
+# Wi-Fi: Broadcom (MacBook Pro 2016 BCM43602, many older laptops), ~11 MB.
+linux-firmware-broadcom-wireless
+# Intel Wi-Fi is ~110 MB; uncomment for Intel laptops (iwlwifi):
+# linux-firmware-intel-wireless
+# Not included on purpose: linux-firmware-nvidia-graphics, mediatek, qualcomm,
+# marvell, mellanox, qlogic, netronome. Add them here if a machine needs one.

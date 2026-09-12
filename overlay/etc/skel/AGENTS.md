@@ -129,6 +129,12 @@ Thunderbird (`sudo apt install thunderbird` from Nexus):
 
 Chat, presence and group chat work. Audio/video do not (no Linux SfB client).
 
+### A5a. Wi-Fi
+
+`iwctl` → `station wlan0 scan`, `station wlan0 get-networks`,
+`station wlan0 connect "SSID"`. Details, enterprise (802.1X) config and the
+MacBook Pro 2016 hardware table are in `laptop.md`.
+
 ### A6a. Firewall (someone is scanning me)
 
 ```bash
@@ -199,7 +205,8 @@ config/packages/docker.txt  Docker CE
 config/packages/gui.txt     sway, foot, fuzzel, pipewire, Chrome
 config/packages/tools.txt   nethogs, tcpdump
 config/packages/corporate.txt  krb5-user, pidgin-sipe, cifs-utils, freerdp3-x11
-config/packages/firmware.txt   per-vendor firmware packages
+config/packages/firmware.txt   per-vendor firmware packages (Broadcom Wi-Fi on, Intel Wi-Fi commented)
+config/packages/laptop.txt     iwd, iw, wireless-regdb, brightnessctl, upower (PROFILE_LAPTOP=1)
 config/packages/nexus-extra.txt  downloaded to pool/extra ONLY (not installed): libreoffice, gimp, thunderbird, evolution ...
 config/docker-images.txt    images bundled on the ISO and pushed to Nexus
 config/github-binaries.txt  static binaries (helix, ruff, biome, lazydocker, bandwhich, systemctl-tui, opencode)

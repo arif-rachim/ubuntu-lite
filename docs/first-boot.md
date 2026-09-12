@@ -40,6 +40,9 @@ For many machines, write the answers once to a file and run
 `sudo lite-setup --file office.conf` (KEY=value lines). `sudo lite-setup
 --show` prints the current values, `--set KEY=VALUE` changes one.
 
+On a laptop, connect to Wi-Fi first: `iwctl station wlan0 connect "SSID"`
+(see `laptop.md`).
+
 ## 3. Fill Nexus (first machine only)
 
 Nexus is empty until the ISO content is uploaded. From this machine, with the

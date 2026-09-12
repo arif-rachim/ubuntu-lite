@@ -24,6 +24,7 @@ Office             lite-login [user]     Kerberos ticket for the AD realm (then 
 Audio              alsamixer / wpctl     volume; wpctl status lists devices
 Updates            sudo apt update && sudo apt upgrade    (only from Nexus)
                    sudo apt install <pkg>                 extras uploaded to Nexus
+Wi-Fi              iwctl                 station wlan0 scan / get-networks / connect "SSID"  (docs: laptop.md)
 Firewall           sudo lite-fw          status | watch | top -24h | block IP | allow IP | mode allowlist | open PORT
 Docs               /usr/share/doc/ubuntu-lite/   (troubleshooting.md: symptom -> check -> fix)
 H

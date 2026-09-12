@@ -1,0 +1,7 @@
+# Laptop profile (PROFILE_LAPTOP=1 in build.env): Wi-Fi via iwd, brightness,
+# power info. Small (~10 MB); Wi-Fi firmware is selected in firmware.txt.
+iwd
+iw
+wireless-regdb
+brightnessctl
+upower
