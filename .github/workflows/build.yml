@@ -33,8 +33,8 @@ jobs:
         with:
           name: ubuntu-lite-iso
           path: |
-            out/*.iso
-            out/*.sha256
+            out/ubuntu-lite-2*.iso
+            out/ubuntu-lite-2*.iso.sha256
             out/size-report.txt
           retention-days: 7
           compression-level: 0
