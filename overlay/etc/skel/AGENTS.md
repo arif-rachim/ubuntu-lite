@@ -26,6 +26,11 @@ Hard rules in both places:
    `/etc/ubuntu-lite/site.conf` and is applied with `sudo lite-setup`.
 3. Before saying something is impossible, check `docs/` (repo) or
    `/usr/share/doc/ubuntu-lite/` (machine).
+4. When something fails, open `troubleshooting.md` (same places) first: it
+   maps symptoms to the exact check command and fix. Run the check, quote
+   its output, then apply the fix. If the symptom is not listed, gather:
+   `journalctl -b -p err`, `systemctl --failed`, `sudo lite-setup --test`,
+   `sudo lite-fw status`, and `dmesg | tail -50`, and report them.
 
 ---
 
@@ -267,7 +272,27 @@ become `/etc/ubuntu-lite/site.conf` in the image and are applied by
 `sudo lite-setup` on the machine. Both paths run the same script:
 `overlay/usr/lib/ubuntu-lite/lite-setup`.
 
-### B6. Things that look like bugs but are design
+### B6. Building on Windows
+
+`build/build.sh` needs a Linux kernel with root (chroot, bind mounts). From
+Windows use one of:
+
+* **WSL2 with Ubuntu 24.04** (recommended): `wsl --install -d Ubuntu-24.04`,
+  then inside it the same `sudo apt install ...` and `make build` as on
+  Linux. Docker for the image seeds: Docker Desktop with WSL integration, or
+  `sudo apt install docker.io` inside WSL. `make test` works if
+  `/dev/kvm` exists in WSL (Windows 11 with nested virtualization), otherwise
+  it is slow; alternatively boot the ISO in a Hyper-V Generation 2 VM
+  (Secure Boot off or "Microsoft UEFI Certificate Authority" template).
+* **Docker Desktop only**: `make docker-build` runs the build in a
+  privileged Linux container; no WSL shell needed. QEMU test not available.
+* **GitHub Actions**: every push builds the ISO and runs the QEMU tests
+  (`.github/workflows/build.yml`); download the artifact from the run.
+
+Write the ISO to USB with Rufus in *DD image* mode (not ISO mode) or
+balenaEtcher.
+
+### B7. Things that look like bugs but are design
 
 * `apt install chromium` would install a snap; the image uses Google Chrome's deb.
 * No `linux-modules-extra` on 7.x HWE kernels: all drivers are in `linux-modules`.

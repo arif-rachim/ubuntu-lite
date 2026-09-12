@@ -45,6 +45,11 @@ make test-boot                # boot the installed disk to the login prompt
 sudo dd if=out/ubuntu-lite-latest.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
+Building on Windows: use WSL2 (Ubuntu 24.04) for the same commands, or
+`make docker-build` with Docker Desktop, or let GitHub Actions build it and
+download the artifact. Write the ISO with Rufus in DD mode. Details in
+`AGENTS.md` section B6; problems in `docs/troubleshooting.md`.
+
 The installer picks the largest internal disk, wipes it, and reboots. If it
 finds an existing ubuntu-lite install it powers off instead, unless you pick
 the "Reinstall" GRUB entry. Kernel options: `lite.disk=/dev/nvme0n1`,
@@ -64,7 +69,7 @@ overlay/           files copied into the root filesystem (installer, units, sway
 build/build.sh     mmdebstrap -> apt in chroot -> customize -> squashfs -> grub-mkrescue ISO
 build/keys.sh      GPG key for the Nexus apt repository
 scripts/           nexus-upload.sh (also on the ISO and installed as lite-nexus-upload), test-qemu.sh
-docs/              first-boot.md, editor.md, nexus-setup.md, airgap-workflow.md, corporate.md, design.md
+docs/              first-boot.md, troubleshooting.md, editor.md, nexus-setup.md, airgap-workflow.md, corporate.md, design.md
 out/               build output (git-ignored): iso, pool/, seed/, size-report.txt
 ```
 
