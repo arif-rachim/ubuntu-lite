@@ -1,0 +1,6 @@
+# rendered by lite-fw
+table inet lite {
+	set allow4 { type ipv4_addr; flags interval; }
+	set block4 { type ipv4_addr; flags interval; }
+	set scanners { type ipv4_addr; flags dynamic,timeout; timeout 1h; size 65535; }
+}

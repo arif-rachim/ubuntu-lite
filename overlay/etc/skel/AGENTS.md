@@ -40,13 +40,14 @@ Hard rules in both places:
 | `/etc/docker/daemon.json` | docker registry mirror (generated) |
 | `/etc/krb5.conf` | Kerberos (generated) |
 | `/etc/opt/chrome/policies/managed/lite-sso.json` | Chrome SSO allow-list (generated) |
-| `/etc/nftables.conf` | firewall, inbound ssh only; `sudo systemctl reload nftables` after edits |
+| `/etc/nftables.conf` + `/etc/nftables.d/` | firewall; never hand-edit, use `sudo lite-fw` (status, watch, top, block, allow, mode, open, close) |
 | `~/.config/sway/config` | window manager keys (Super+Enter terminal, Super+c Helix, Super+b Chrome, Super+m OWA, Super+s Pidgin) |
 | `~/.config/helix/` | editor config; `languages.toml` wires ruff (Python) and biome (JS/TS) as language servers |
 | `/usr/share/doc/ubuntu-lite/*.md` | full docs: first-boot, nexus-setup, airgap-workflow, corporate |
 
 Helper commands: `lite-help` (cheat sheet), `sudo lite-setup` (office
-addresses), `sudo lite-setup --test` (connectivity check), `lite-login`
+addresses), `sudo lite-setup --test` (connectivity check), `sudo lite-fw`
+(inbound firewall: watch attempts, block/allow IPs, allowlist mode), `lite-login`
 (Kerberos ticket), `lite-owa` (OWA window), `lite-nexus-upload` (push ISO
 content into Nexus), `httpmon` (HTTP inspector), `lazydocker`,
 `systemctl-tui`, `bandwhich`, `nethogs`.
@@ -122,6 +123,19 @@ Thunderbird (`sudo apt install thunderbird` from Nexus):
 | Advanced > Authentication scheme | Kerberos (after `lite-login`) or NTLM |
 
 Chat, presence and group chat work. Audio/video do not (no Linux SfB client).
+
+### A6a. Firewall (someone is scanning me)
+
+```bash
+sudo lite-fw watch                 # live dropped attempts: source, port
+sudo lite-fw top -24h              # per-IP summary
+sudo lite-fw block 10.1.2.3        # persistent block; unblock to undo
+sudo lite-fw allow 10.1.5.0/24 && sudo lite-fw mode allowlist   # only these may reach open ports
+sudo lite-fw open 3000             # expose a port (tcp) / close 3000
+```
+Hosts probing closed TCP ports are auto-banned (default 1h, `ban-time`).
+Allowlisted IPs are never banned. `mode allowlist` refuses to lock the user
+out (empty list or ssh client not listed).
 
 ### A6. Windows shares and RDP
 

@@ -141,6 +141,29 @@ lazydocker                 # containers on/off, logs
 httpmon                    # HTTP(S) traffic like the DevTools Network tab
 ```
 
+## 10. Firewall: who may reach this machine
+
+Inbound is closed except SSH. `lite-fw` shows who is knocking and lets you
+block or allowlist them, all in nftables, no extra daemon:
+
+```bash
+sudo lite-fw status              # mode, open ports, blocked/allowed/auto-banned, last hits
+sudo lite-fw watch               # live: time, source, destination, protocol, port of every dropped attempt
+sudo lite-fw top -24h            # attempts per source IP with the ports they tried
+lite-fw ports                    # what is listening on this machine
+sudo lite-fw block 10.1.2.3      # persistent blocklist (also CIDR)   / unblock
+sudo lite-fw allow 10.1.5.0/24   # allowlist, never auto-banned       / unallow
+sudo lite-fw mode allowlist      # only allowlisted IPs may reach open ports (refuses if the list is empty
+                                 # or your own ssh client is not in it); `mode open` reverts
+sudo lite-fw open 3000           # open a port (3000/udp for UDP)     / close
+sudo lite-fw ban-time 2h         # hosts probing closed TCP ports are auto-banned for this long
+sudo lite-fw banned              # who is auto-banned right now       / unban IP
+```
+
+Published container ports (`-p 8080:80`) are covered by the same block and
+allow lists. Office vulnerability scanners will get auto-banned too; put
+their IPs in the allowlist if IT complains.
+
 ## Where things live
 
 | Path | Purpose |
@@ -149,6 +172,6 @@ httpmon                    # HTTP(S) traffic like the DevTools Network tab
 | `/etc/apt/sources.list.d/nexus.sources` | the only apt source |
 | `/etc/docker/daemon.json` | registry mirror |
 | `/etc/krb5.conf`, `/etc/opt/chrome/policies/managed/lite-sso.json` | Kerberos + Chrome SSO |
-| `/etc/nftables.conf` | firewall (inbound: ssh only) |
+| `/etc/nftables.conf`, `/etc/nftables.d/`, `/etc/ubuntu-lite/fw*.txt` | firewall, rendered by `lite-fw` |
 | `~/.config/sway/config` | key bindings |
 | `/usr/share/doc/ubuntu-lite/` | these documents |

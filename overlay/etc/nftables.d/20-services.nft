@@ -1,0 +1,8 @@
+# rendered by lite-fw (mode open, tcp ports 22)
+table inet lite {
+	chain services {
+		tcp dport { 22 } accept
+	}
+	chain forward_services {
+	}
+}

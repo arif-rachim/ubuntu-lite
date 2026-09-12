@@ -48,6 +48,11 @@ Decisions taken with the owner, and why.
   with the real Docker on first boot and deletes them, so `docker run
   postgres` works before Nexus is even populated.
 
+* **Firewall as data, not a daemon.** `lite-fw` renders two include files
+  for nftables (lists and services); auto-banning of port scanners is a
+  dynamic set with a timeout, logging is the kernel log. No fail2ban, no
+  python, nothing to keep running.
+
 Things deliberately left out: snapd, cloud-init, unattended-upgrades,
 ubuntu-advantage-tools, apport, whoopsie, popularity-contest, NetworkManager,
 ModemManager, avahi, cups, bluetooth, Wi-Fi firmware, X11 server, display

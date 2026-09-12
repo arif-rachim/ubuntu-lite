@@ -268,7 +268,7 @@ fetch_github_binaries() {
 				if curl -fsSL -o "$file" "$url" 2>/dev/null; then log "fetched $name $ver"; echo "$url" > "$SEED/bin/$name.url"; got=1; break; fi
 			done < <(git ls-remote --tags --refs "https://github.com/$repo" 2>/dev/null | sed 's#.*refs/tags/##' \
 				| { if [ -n "$prefix" ]; then grep -F "$prefix" | grep "^$prefix"; else grep -E '^v?[0-9]+\.[0-9]+'; fi; } \
-				| while read -r t; do v=${t#"$prefix"}; v=${v#v}; echo "$v $t"; done | grep -Ev '[a-z]' | sort -Vr | head -n 6)
+				| while read -r t; do v=${t#"$prefix"}; v=${v#v}; echo "$v $t"; done | awk '$1 !~ /[a-zA-Z]/' | sort -Vr | head -n 6)
 			[ $got = 1 ] || { warn "no downloadable release asset for $name ($repo, $template)"; rm -f "$file"; continue; }
 		fi
 		tmp=$(mktemp -d)

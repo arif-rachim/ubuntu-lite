@@ -5,5 +5,6 @@ cat <<'MOTD'
    bandwhich       live in/out per process        nethogs         bandwidth per process
    httpmon         HTTP(S) inspector (mitmproxy)  lite-help       full cheat sheet
    lite-login      Kerberos ticket (SSO)          Super+m OWA     Super+s Skype for Business chat
-   sudo lite-setup Nexus / AD addresses (first boot!)   docs: /usr/share/doc/ubuntu-lite/first-boot.md
+   sudo lite-setup Nexus / AD addresses (first boot!)   sudo lite-fw    inbound firewall: watch, block, allow
+   docs: /usr/share/doc/ubuntu-lite/first-boot.md
 MOTD
