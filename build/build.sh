@@ -138,7 +138,13 @@ stage_packages() {
 	install -m644 "$ROOT/overlay/etc/apt/apt.conf.d/99-lite" "$ROOTFS/etc/apt/apt.conf.d/99-lite"
 	build_ca_on
 
-	# third-party repos, build time only
+	# build-time sources: Ubuntu archive + third-party repos (customize replaces them with Nexus only)
+	rm -f "$ROOTFS/etc/apt/sources.list" "$ROOTFS"/etc/apt/sources.list.d/*
+	cat > "$ROOTFS/etc/apt/sources.list.d/build-ubuntu.list" <<-SRC
+	deb $UBUNTU_MIRROR $UBUNTU_SUITE main universe
+	deb $UBUNTU_MIRROR $UBUNTU_SUITE-updates main universe
+	deb $UBUNTU_MIRROR $UBUNTU_SUITE-security main universe
+	SRC
 	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o "$ROOTFS/etc/apt/keyrings/docker.gpg" --yes
 	curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o "$ROOTFS/etc/apt/keyrings/microsoft.gpg" --yes
 	curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o "$ROOTFS/etc/apt/keyrings/google.gpg" --yes
