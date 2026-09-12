@@ -1,0 +1,6 @@
+#!/bin/bash
+# Get a Kerberos ticket for the office AD realm: lite-login [username]
+. /usr/share/ubuntu-lite/lite.conf
+[ -n "${AD_REALM:-}" ] || { echo "AD_REALM is not configured in this image (config/build.env)"; exit 1; }
+user=${1:-$USER}
+exec kinit "${user%%@*}@$AD_REALM"

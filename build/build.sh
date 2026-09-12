@@ -154,6 +154,9 @@ stage_packages() {
 	locales locales/locales_to_be_generated multiselect $LOCALE UTF-8
 	tzdata tzdata/Areas select ${TIMEZONE%%/*}
 	tzdata tzdata/Zones/${TIMEZONE%%/*} select ${TIMEZONE#*/}
+	krb5-config krb5-config/default_realm string ${AD_REALM:-EXAMPLE.COM}
+	krb5-config krb5-config/kerberos_servers string ${AD_KDC:-}
+	krb5-config krb5-config/admin_server string
 	DEB
 	ln -sf "/usr/share/zoneinfo/$TIMEZONE" "$ROOTFS/etc/localtime"
 	echo "$TIMEZONE" > "$ROOTFS/etc/timezone"
@@ -188,7 +191,7 @@ stage_packages() {
 	fi
 
 	local list
-	list=$(pkgs "$ROOT"/config/packages/base.txt "$ROOT"/config/packages/docker.txt "$ROOT"/config/packages/gui.txt "$ROOT"/config/packages/tools.txt)
+	list=$(pkgs "$ROOT"/config/packages/base.txt "$ROOT"/config/packages/docker.txt "$ROOT"/config/packages/gui.txt "$ROOT"/config/packages/tools.txt "$ROOT"/config/packages/corporate.txt)
 	case "${FIRMWARE_MODE:-select}" in
 		full) list="$list"$'\n'"linux-firmware" ;;
 		select) list="$list"$'\n'"$(pkgs "$ROOT/config/packages/firmware.txt")" ;;
@@ -300,6 +303,39 @@ fetch_docker_images() {
 	done
 }
 
+# Kerberos + Chrome SSO + OWA shortcut, driven by AD_* / OWA_URL. Safe no-op when unset.
+configure_corporate() {
+	if [ -n "${AD_REALM:-}" ]; then
+		local kdc_lines="" k
+		for k in ${AD_KDC:-}; do kdc_lines="$kdc_lines		kdc = $k"$'\n'; done
+		local dns_lookup=true; [ -n "${AD_KDC:-}" ] && dns_lookup=false
+		cat > "$ROOTFS/etc/krb5.conf" <<-KRB
+		[libdefaults]
+			default_realm = $AD_REALM
+			dns_lookup_kdc = $dns_lookup
+			dns_lookup_realm = false
+			rdns = false
+			forwardable = true
+			ticket_lifetime = 10h
+			renew_lifetime = 7d
+			default_ccache_name = KEYRING:persistent:%{uid}
+
+		[realms]
+			$AD_REALM = {
+		${kdc_lines}		}
+
+		[domain_realm]
+			.${AD_DOMAIN:-$(echo "$AD_REALM" | tr 'A-Z' 'a-z')} = $AD_REALM
+			${AD_DOMAIN:-$(echo "$AD_REALM" | tr 'A-Z' 'a-z')} = $AD_REALM
+		KRB
+	fi
+	if [ -n "${AD_DOMAIN:-}" ]; then
+		mkdir -p "$ROOTFS/etc/opt/chrome/policies/managed"
+		jq -n --arg d "*.$AD_DOMAIN" '{AuthServerAllowlist:$d, AuthNegotiateDelegateAllowlist:$d, AuthSchemes:"basic,digest,ntlm,negotiate"}' \
+			> "$ROOTFS/etc/opt/chrome/policies/managed/lite-sso.json"
+	fi
+}
+
 stage_customize() {
 	log "stage customize"
 	[ -f "$WORK/kver" ] || die "run stage packages first"
@@ -321,6 +357,9 @@ stage_customize() {
 	NEXUS_APT_REPO=$NEXUS_APT_REPO
 	NEXUS_RAW_REPO=$NEXUS_RAW_REPO
 	NEXUS_DOCKER_REGISTRY=$NEXUS_DOCKER_REGISTRY
+	AD_REALM=$AD_REALM
+	AD_DOMAIN=$AD_DOMAIN
+	OWA_URL=$OWA_URL
 	CONF
 	cp "$ROOT/README.md" "$ROOT"/docs/*.md "$ROOTFS/usr/share/doc/ubuntu-lite/" 2>/dev/null || true
 	install -m755 "$ROOT/scripts/nexus-upload.sh" "$ROOTFS/usr/lib/ubuntu-lite/nexus-upload.sh"
@@ -330,6 +369,8 @@ stage_customize() {
 	echo "ubuntu-lite" > "$ROOTFS/etc/hostname"
 	printf '127.0.0.1 localhost\n127.0.1.1 ubuntu-lite\n::1 localhost ip6-localhost ip6-loopback\n' > "$ROOTFS/etc/hosts"
 	[ -n "$NEXUS_IP" ] && echo "$NEXUS_IP ${NEXUS_DOCKER_REGISTRY%%:*} $(echo "$NEXUS_URL" | sed -E 's#^[a-z]+://##; s#[:/].*##')" >> "$ROOTFS/etc/hosts"
+	[ -n "${EXTRA_HOSTS:-}" ] && echo "$EXTRA_HOSTS" | tr '|' '\n' | sed 's/^[[:space:]]*//' | grep -v '^$' >> "$ROOTFS/etc/hosts"
+	configure_corporate
 	sed -i "s/^# *$LOCALE UTF-8/$LOCALE UTF-8/" "$ROOTFS/etc/locale.gen"
 	grep -q "^$LOCALE UTF-8" "$ROOTFS/etc/locale.gen" || echo "$LOCALE UTF-8" >> "$ROOTFS/etc/locale.gen"
 	in_chroot locale-gen >/dev/null

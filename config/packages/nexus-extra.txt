@@ -21,3 +21,4 @@ btop
 python3-minimal
 build-essential
 fonts-noto-color-emoji
+thunderbird

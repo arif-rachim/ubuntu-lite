@@ -4,4 +4,5 @@ cat <<'MOTD'
    lazydocker      containers on/off, logs        systemctl-tui   services on/off
    bandwhich       live in/out per process        nethogs         bandwidth per process
    httpmon         HTTP(S) inspector (mitmproxy)  lite-help       full cheat sheet
+   lite-login      Kerberos ticket (SSO)          Super+m OWA     Super+s Skype for Business chat
 MOTD

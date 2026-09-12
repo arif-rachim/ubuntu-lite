@@ -12,6 +12,9 @@ Traffic            bandwhich             live in/out per process and connection 
                    nethogs               bandwidth per process
                    httpmon [--docker]    HTTP(S) flows like DevTools Network, 'httpmon trust' for TLS
                    tcpdump -i any        raw capture
+Office             lite-login [user]     Kerberos ticket for the AD realm (then Chrome/OWA/intranet SSO)
+                   Super+m / lite-owa    Outlook Web App in Chrome      klist  shows the ticket
+                   Super+s / pidgin      Skype for Business chat (pidgin-sipe), see docs/corporate.md
 Audio              alsamixer / wpctl     volume; wpctl status lists devices
 Updates            sudo apt update && sudo apt upgrade    (only from Nexus)
                    sudo apt install <pkg>                 extras uploaded to Nexus

@@ -15,6 +15,7 @@ What is on the machine and nothing else:
 | Apps | VS Code, Google Chrome (native Wayland) | development |
 | Traffic | `httpmon` (mitmproxy in a container), `bandwhich`, `nethogs`, `tcpdump` | DevTools-like network view in the terminal |
 | On/off | `lazydocker` (containers), `systemctl-tui` (services) | friendly TUIs |
+| Office | Kerberos SSO (`lite-login`), OWA in Chrome (`Super+m`), Skype for Business chat via `pidgin-sipe` | see docs/corporate.md |
 
 Everything installed comes from a package pool that is also shipped on the ISO,
 so the same set of `.deb` files, docker images and VS Code extensions can be
@@ -77,5 +78,6 @@ image), `pool/extra` (optional packages for Nexus), `seed/docker`, `seed/vsix`,
 * Resume a partial build: `make resume FROM=customize` (stages: rootfs,
   packages, customize, pool, squashfs, iso).
 
-See `docs/nexus-setup.md` for the office side and `docs/airgap-workflow.md` for
-how updates travel from the internet to the machines.
+See `docs/nexus-setup.md` for the office side, `docs/airgap-workflow.md` for
+how updates travel from the internet to the machines, and `docs/corporate.md`
+for AD / OWA / Skype for Business.

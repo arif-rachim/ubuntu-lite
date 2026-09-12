@@ -18,6 +18,8 @@ bindsym $mod+d exec $menu
 bindsym $mod+c exec code
 bindsym $mod+b exec chrome
 bindsym $mod+Shift+b exec chrome --proxy-server=127.0.0.1:8080
+bindsym $mod+m exec lite-owa
+bindsym $mod+s exec pidgin
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit sway?' -B 'Yes' 'swaymsg exit'

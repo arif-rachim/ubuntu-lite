@@ -1,0 +1,6 @@
+# Office integration: Kerberos SSO for Chrome/OWA/intranet, Skype for Business
+# chat via pidgin-sipe. Configured from AD_* / OWA_URL in config/build.env.
+krb5-user
+libsasl2-modules-gssapi-mit
+pidgin
+pidgin-sipe
