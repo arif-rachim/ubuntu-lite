@@ -28,27 +28,45 @@ mountroot() {
 	say() { echo "lite: $*"; [ -c /dev/ttyS0 ] && grep -q 'console=ttyS0' /proc/cmdline && echo "lite: $*" > /dev/ttyS0 2>/dev/null; return 0; }
 
 	# Hybrid ISOs expose the label on the whole disk and on one of its partitions;
-	# try whole disks first, then partitions, as iso9660 or vfat (ISO contents
-	# copied onto a FAT stick with the same label also work).
+	# probe every block device directly (no blkid cache in the initramfs), try whole
+	# disks before partitions, as iso9660 or vfat (ISO contents copied onto a FAT
+	# stick with the same label also work). After 20s also try unlabelled devices.
+	candidates() {
+		local b n d prio l
+		for b in /sys/class/block/*; do
+			n=${b##*/}
+			case "$n" in loop*|ram*|zram*|dm-*|sr*) [ "${n#sr}" = "$n" ] && continue ;; esac
+			d=/dev/$n; [ -b "$d" ] || continue
+			prio=0; [ -e "$b/partition" ] && prio=1
+			l=$(blkid -p -o value -s LABEL "$d" 2>/dev/null || true)
+			if [ "$l" = "$LABEL" ]; then echo "0$prio $d"; elif [ "$1" = any ]; then echo "1$prio $d"; fi
+		done | sort -n | cut -d' ' -f2
+	}
+	try_mount() {
+		local fstype
+		for fstype in iso9660 vfat; do
+			if mount -t $fstype -o ro "$1" /run/lite/iso 2>/dev/null; then
+				[ -f /run/lite/iso/lite/filesystem.squashfs ] && return 0
+				umount /run/lite/iso 2>/dev/null || true
+			fi
+		done
+		return 1
+	}
 	mkdir -p /run/lite/iso
 	found=""
 	i=0
-	while [ $i -lt 60 ] && [ -z "$found" ]; do
+	while [ $i -lt 90 ] && [ -z "$found" ]; do
 		udevadm settle --timeout=2 2>/dev/null || true
-		for dev in $(blkid -o device -t LABEL="$LABEL" 2>/dev/null | awk '{ print length($0), $0 }' | sort -n | cut -d' ' -f2-); do
-			for fstype in iso9660 vfat; do
-				if mount -t $fstype -o ro "$dev" /run/lite/iso 2>/dev/null; then
-					if [ -f /run/lite/iso/lite/filesystem.squashfs ]; then found="$dev"; break 2; fi
-					umount /run/lite/iso 2>/dev/null || true
-				fi
-			done
+		mode=label; [ $i -ge 20 ] && mode=any
+		for dev in $(candidates $mode); do
+			if try_mount "$dev"; then found="$dev"; break; fi
 		done
 		[ -n "$found" ] && break
 		[ $i -eq 0 ] && say "waiting for a device labelled $LABEL ..."
 		sleep 1
 		i=$((i + 1))
 	done
-	[ -n "$found" ] || panic "lite: could not find the $LABEL medium"
+	[ -n "$found" ] || { say "could not find the $LABEL medium"; panic "lite: could not find the $LABEL medium"; }
 	say "using $found"
 
 	mkdir -p /run/lite/ro /run/lite/rw
