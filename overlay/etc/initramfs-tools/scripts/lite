@@ -24,22 +24,34 @@ mountroot() {
 		esac
 	done
 
-	dev=""
+	# say what we are doing on the screen and on the serial console, if any
+	say() { echo "lite: $*"; [ -c /dev/ttyS0 ] && grep -q 'console=ttyS0' /proc/cmdline && echo "lite: $*" > /dev/ttyS0 2>/dev/null; return 0; }
+
+	# Hybrid ISOs expose the label on the whole disk and on one of its partitions;
+	# try whole disks first, then partitions, as iso9660 or vfat (ISO contents
+	# copied onto a FAT stick with the same label also work).
+	mkdir -p /run/lite/iso
+	found=""
 	i=0
-	while [ $i -lt 60 ]; do
+	while [ $i -lt 60 ] && [ -z "$found" ]; do
 		udevadm settle --timeout=2 2>/dev/null || true
-		dev=$(blkid -L "$LABEL" 2>/dev/null || true)
-		[ -n "$dev" ] && break
-		[ $i -eq 0 ] && echo "lite: waiting for device labelled $LABEL ..."
+		for dev in $(blkid -o device -t LABEL="$LABEL" 2>/dev/null | awk '{ print length($0), $0 }' | sort -n | cut -d' ' -f2-); do
+			for fstype in iso9660 vfat; do
+				if mount -t $fstype -o ro "$dev" /run/lite/iso 2>/dev/null; then
+					if [ -f /run/lite/iso/lite/filesystem.squashfs ]; then found="$dev"; break 2; fi
+					umount /run/lite/iso 2>/dev/null || true
+				fi
+			done
+		done
+		[ -n "$found" ] && break
+		[ $i -eq 0 ] && say "waiting for a device labelled $LABEL ..."
 		sleep 1
 		i=$((i + 1))
 	done
-	if [ -z "$dev" ]; then
-		panic "lite: could not find a filesystem labelled $LABEL"
-	fi
+	[ -n "$found" ] || panic "lite: could not find the $LABEL medium"
+	say "using $found"
 
-	mkdir -p /run/lite/iso /run/lite/ro /run/lite/rw
-	mount -o ro "$dev" /run/lite/iso || panic "lite: cannot mount $dev"
+	mkdir -p /run/lite/ro /run/lite/rw
 	loopdev=$(losetup -f) || panic "lite: no free loop device"
 	losetup -r "$loopdev" /run/lite/iso/lite/filesystem.squashfs || panic "lite: losetup failed"
 	mount -t squashfs -o ro "$loopdev" /run/lite/ro || panic "lite: cannot mount squashfs"

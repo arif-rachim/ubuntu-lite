@@ -37,6 +37,14 @@ case "${1:-}" in
 	install)
 		ISO=${2:-$OUT/ubuntu-lite-latest.iso}
 		[ -f "$ISO" ] || { echo "ISO not found: $ISO"; exit 1; }
+		# Remaster with the serial port as primary console so the whole install is visible in $LOG.
+		if [ -d "$OUT/work/iso/lite" ] && [ -z "${2:-}" ]; then
+			D=$OUT/work/iso-test; rm -rf "$D"; mkdir -p "$D/boot/grub"
+			cp -al "$OUT/work/iso/lite" "$OUT/work/iso/seed" "$D/" 2>/dev/null || cp -a "$OUT/work/iso/lite" "$OUT/work/iso/seed" "$D/"
+			printf 'set timeout=1\nmenuentry "test" {\n linux /lite/vmlinuz boot=lite console=tty1 console=ttyS0,115200n8 lite.install=1\n initrd /lite/initrd.img\n}\n' > "$D/boot/grub/grub.cfg"
+			ISO=$OUT/ubuntu-lite-test.iso
+			grub-mkrescue -o "$ISO" "$D" -- -volid UBUNTU_LITE >/dev/null 2>&1 || { echo "grub-mkrescue failed"; exit 1; }
+		fi
 		rm -f "$DISK" "$LOG"; qemu-img create -q -f qcow2 "$DISK" 20G; cp "$OVMF_VARS_SRC" "$VARS"
 		echo "installing from $ISO (log: $LOG)"
 		"${common[@]}" -display none -serial "file:$LOG" $(usb_iso "$ISO") &
