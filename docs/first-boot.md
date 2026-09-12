@@ -138,6 +138,8 @@ session, `/sound` for audio. Persistent shares go into `/etc/fstab` with
 ```bash
 mkdir ~/work && cd ~/work && git clone ...
 hx .                       # Helix editor (Super+c), ruff + biome language servers, see editor.md
+yazi                       # file manager (Super+y); Super+space = global search (apps, settings, docs, files)
+lite-search c              # search inside files (live ripgrep)
 # Node / Python / PostgreSQL run in containers, see airgap-workflow.md
 docker compose up -d
 lazydocker                 # containers on/off, logs

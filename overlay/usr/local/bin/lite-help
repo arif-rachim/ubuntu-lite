@@ -5,6 +5,9 @@ ubuntu-lite cheat sheet
 Desktop (sway)     Super+Enter terminal  Super+d launcher  Super+c Helix  Super+b Chrome
                    Super+Shift+b Chrome through httpmon proxy   Super+1..5 workspaces
                    Super+Shift+q close   Super+f fullscreen     Super+Shift+e exit sway
+Search             Super+space / lite-search   apps, settings, docs, files in one box; lite-search c = inside files
+Files              Super+y / yazi        file manager (h/j/k/l move, Enter open, y/p copy/paste, d delete, / filter)
+                   fd NAME | rg TEXT | locate NAME | fzf              find by name, by content, indexed, fuzzy
 Editor             hx . / Super+c        Helix; Space f files, Space / grep, Space a fix, gd definition, :fmt
                    ruff / biome          Python / JS-TS lint+format, wired into Helix (docs: editor.md)
 Containers         lazydocker            start/stop/restart containers, logs, images

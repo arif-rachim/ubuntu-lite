@@ -2,3 +2,8 @@
 # (mitmproxy) run as docker containers via /usr/local/bin/httpmon.
 nethogs
 tcpdump
+# search: file names (fd, plocate index), file contents (ripgrep), fuzzy picker (fzf)
+fd-find
+ripgrep
+fzf
+plocate

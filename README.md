@@ -19,6 +19,7 @@ What is on the machine and nothing else:
 | Setup | `lite-setup` (Nexus, AD, OWA addresses), `lite-nexus-upload` | docs/first-boot.md |
 | Firewall | `lite-fw`: log and watch inbound attempts, auto-ban port scanners, block/allow lists, allowlist mode | nftables only, no daemon |
 | Laptop | `iwd`/`iwctl` Wi-Fi, Broadcom firmware, brightness keys | docs/laptop.md (MacBook Pro 2016 notes) |
+| Search & files | `lite-search` (Super+space: apps, settings, docs, files, contents), `yazi` file manager, `fd`, `rg`, `fzf`, `plocate` | no indexing daemon beyond plocate's daily updatedb |
 | AI agent | `opencode` binary, `AGENTS.md` in the home directory explains this machine to it | docs/opencode.example.json |
 
 Everything installed comes from a package pool that is also shipped on the ISO,

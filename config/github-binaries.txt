@@ -11,3 +11,4 @@ opencode|sst/opencode|opencode-linux-x64.tar.gz|opencode
 hx|helix-editor/helix|helix-{ver}-x86_64-linux.tar.xz|hx||runtime:/usr/local/share/helix/runtime
 ruff|astral-sh/ruff|ruff-x86_64-unknown-linux-gnu.tar.gz|ruff
 biome|biomejs/biome|biome-linux-x64|biome-linux-x64|@biomejs/biome@
+yazi|sxyazi/yazi|yazi-x86_64-unknown-linux-musl.zip|yazi

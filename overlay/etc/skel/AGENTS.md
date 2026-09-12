@@ -50,6 +50,9 @@ Hard rules in both places:
 | `~/.config/helix/` | editor config; `languages.toml` wires ruff (Python) and biome (JS/TS) as language servers |
 | `/usr/share/doc/ubuntu-lite/*.md` | full docs: first-boot, nexus-setup, airgap-workflow, corporate |
 
+Search: `lite-search` (Super+space) finds apps, settings, docs and files;
+`lite-search c` greps file contents; `yazi` (Super+y) is the file manager;
+`fd`, `rg`, `fzf`, `locate` are on the image.
 Helper commands: `lite-help` (cheat sheet), `sudo lite-setup` (office
 addresses), `sudo lite-setup --test` (connectivity check), `sudo lite-fw`
 (inbound firewall: watch attempts, block/allow IPs, allowlist mode), `lite-login`

@@ -1,0 +1,88 @@
+#!/bin/bash
+# lite-search: one fuzzy search box (fzf) for apps, files, file contents, settings and docs.
+#   lite-search            everything (apps, commands, settings, docs, files under $HOME /etc /mnt /media)
+#   lite-search c [text]   live search inside files under the current directory (ripgrep)
+#   lite-search f|a|s|d    only files | apps+commands | settings | docs
+# Enter opens the result: apps run, folders open in yazi, text in Helix, images/PDF/HTML in Chrome.
+# Bound to Super+space in sway (floating window). Type to filter; Esc quits.
+set -uo pipefail
+mode=${1:-all}; [ $# -gt 0 ] && shift
+query="$*"
+
+in_sway() { [ -n "${SWAYSOCK:-}" ]; }
+open_gui() { if in_sway; then swaymsg exec -- "$*" >/dev/null; else nohup "$@" >/dev/null 2>&1 & fi; }
+open_path() {
+	local p=$1
+	if [ -d "$p" ]; then exec yazi "$p"; fi
+	case "$(file -b --mime-type "$p" 2>/dev/null)" in
+		image/*|application/pdf|text/html) open_gui chrome --app="file://$p" ;;
+		text/*|application/json|application/x-*script*|inode/x-empty) exec hx "$p" ;;
+		*) open_gui xdg-open "$p" ;;
+	esac
+}
+run_here() { clear; bash -ic "$1"; echo; read -rp "[lite-search] done, press Enter"; }
+
+settings() {
+	cat <<-'S'
+	setting	Wi-Fi: connect to a network	iwctl
+	setting	Nexus / AD / OWA addresses	sudo lite-setup
+	setting	Test Nexus and AD connectivity	sudo lite-setup --test
+	setting	Firewall status (who is knocking)	sudo lite-fw status
+	setting	Firewall: watch attempts live	sudo lite-fw watch
+	setting	Kerberos ticket (single sign-on)	lite-login
+	setting	Volume mixer	alsamixer
+	setting	Audio devices	wpctl status | less
+	setting	Displays (sway outputs)	swaymsg -t get_outputs | less
+	setting	Network status	networkctl status -a | less
+	setting	Keyboard / window manager config	hx ~/.config/sway/config
+	setting	Editor config (Helix)	hx ~/.config/helix/config.toml
+	setting	Containers (lazydocker)	lazydocker
+	setting	Services (systemctl-tui)	systemctl-tui
+	setting	Processes and load	htop
+	setting	Disk usage of home	du -xh --max-depth=1 ~ | sort -h | less
+	setting	Available updates (Nexus)	sudo apt update && apt list --upgradable | less
+	setting	Cheat sheet	lite-help | less
+	setting	Reboot	systemctl reboot
+	setting	Power off	systemctl poweroff
+	S
+}
+apps() {
+	local f n e
+	for f in /usr/share/applications/*.desktop "$HOME"/.local/share/applications/*.desktop; do
+		[ -f "$f" ] || continue
+		grep -q '^NoDisplay=true' "$f" && continue
+		n=$(sed -n 's/^Name=//p' "$f" | head -n1); e=$(sed -n 's/^Exec=//p' "$f" | head -n1 | sed 's/ %[a-zA-Z]//g')
+		[ -n "$n" ] && printf 'app\t%s\t%s\n' "$n" "$e"
+	done
+	compgen -c | sort -u | grep -vE '^[_.]|^[A-Z]' | awk '{printf "cmd\t%s\t%s\n",$1,$1}'
+}
+docs() { local f; for f in /usr/share/doc/ubuntu-lite/*.md; do [ -f "$f" ] && printf 'doc\t%s\t%s\n' "$(basename "$f" .md)" "$f"; done; }
+files() {
+	if command -v plocate >/dev/null && [ -r /var/lib/plocate/plocate.db ]; then
+		plocate -i -l 30000 --regex "^($HOME|/etc|/mnt|/media)/" 2>/dev/null
+	else
+		fd -H -E .git -E node_modules -E .cache . "$HOME" 2>/dev/null
+	fi | awk '{printf "file\t%s\t%s\n",$0,$0}'
+}
+preview='t={1}; p={3}; case "$t" in file|doc) if [ -d "$p" ]; then ls -la --color=always "$p"; else head -n 80 "$p" 2>/dev/null; fi ;; setting|cmd|app) echo "{2}"; echo; echo "runs: {3}" ;; esac'
+
+if [ "$mode" = c ]; then
+	sel=$(fzf --disabled --query "$query" --prompt 'content> ' --header 'live search in files under the current directory' \
+		--bind "change:reload:rg --line-number --no-heading --smart-case --color=never -- {q} . 2>/dev/null || true" \
+		--delimiter : --preview 'n={2}; s=$((n>20?n-20:1)); sed -n "${s},$((n+20))p" {1} 2>/dev/null' --preview-window right:55%)
+	[ -n "$sel" ] && exec hx "$(cut -d: -f1 <<<"$sel")" "+$(cut -d: -f2 <<<"$sel")"
+	exit 0
+fi
+case "$mode" in
+	a) src() { apps; } ;; s) src() { settings; } ;; d) src() { docs; } ;; f) src() { files; } ;;
+	*) src() { settings; docs; apps; files; } ;;
+esac
+sel=$(src | fzf --query "$query" --prompt 'search> ' --header 'apps, settings, docs, files  |  Esc quits  |  lite-search c = search inside files' \
+	--delimiter '\t' --with-nth 1,2 --nth 2 --tabstop 4 --preview "$preview" --preview-window right:50%:wrap --ansi --tiebreak=index) || exit 0
+[ -n "$sel" ] || exit 0
+type=$(cut -f1 <<<"$sel"); target=$(cut -f3 <<<"$sel")
+case "$type" in
+	app) open_gui "$target" ;;
+	cmd|setting) run_here "$target" ;;
+	doc|file) open_path "$target" ;;
+esac

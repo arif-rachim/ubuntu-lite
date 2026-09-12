@@ -21,6 +21,9 @@ bindsym $mod+c exec foot hx
 bindsym $mod+b exec chrome
 bindsym $mod+Shift+b exec chrome --proxy-server=127.0.0.1:8080
 bindsym $mod+m exec lite-owa
+bindsym $mod+space exec foot --app-id=lite-search lite-search
+bindsym $mod+y exec foot yazi
+for_window [app_id="lite-search"] floating enable, resize set 1100 650, move position center
 bindsym $mod+s exec pidgin
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+c reload
