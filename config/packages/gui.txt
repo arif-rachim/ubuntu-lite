@@ -1,5 +1,5 @@
 # Minimal Wayland desktop: sway (tiling compositor), foot (terminal),
-# fuzzel (launcher), audio via pipewire, Google Chrome and VS Code.
+# fuzzel (launcher), audio via pipewire, Google Chrome. The editor (Helix) comes from config/github-binaries.txt.
 sway
 swaybg
 foot
@@ -18,4 +18,3 @@ wireplumber
 alsa-utils
 libnss3-tools
 google-chrome-stable
-code

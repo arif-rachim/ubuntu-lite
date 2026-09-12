@@ -2,9 +2,11 @@
 cat <<'H'
 ubuntu-lite cheat sheet
 =======================
-Desktop (sway)     Super+Enter terminal  Super+d launcher  Super+c VS Code  Super+b Chrome
+Desktop (sway)     Super+Enter terminal  Super+d launcher  Super+c Helix  Super+b Chrome
                    Super+Shift+b Chrome through httpmon proxy   Super+1..5 workspaces
                    Super+Shift+q close   Super+f fullscreen     Super+Shift+e exit sway
+Editor             hx . / Super+c        Helix; Space f files, Space / grep, Space a fix, gd definition, :fmt
+                   ruff / biome          Python / JS-TS lint+format, wired into Helix (docs: editor.md)
 Containers         lazydocker            start/stop/restart containers, logs, images
                    docker compose up -d  usual docker CLI, images come from Nexus
 Services           systemctl-tui         start/stop/enable services with arrows + keys

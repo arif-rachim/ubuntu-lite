@@ -1,0 +1,27 @@
+# Helix: https://docs.helix-editor.com  (:tutor for the interactive tutorial)
+theme = "onedark"
+
+[editor]
+line-number = "relative"
+cursorline = true
+bufferline = "multiple"
+color-modes = true
+true-color = true
+rulers = [100]
+
+[editor.lsp]
+display-messages = true
+display-inlay-hints = true
+
+[editor.indent-guides]
+render = true
+
+[editor.file-picker]
+hidden = false
+
+[keys.normal]
+C-s = ":write"
+C-q = ":quit"
+
+[keys.insert]
+C-s = ["normal_mode", ":write"]

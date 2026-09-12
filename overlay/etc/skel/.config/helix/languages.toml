@@ -1,0 +1,53 @@
+# Language servers shipped on the image: ruff (Python) and biome (JS/TS/JSON/CSS).
+# TypeScript type checking needs typescript-language-server (Node), which lives in
+# your dev container; see docs/editor.md for how to use it from there.
+
+[language-server.ruff]
+command = "ruff"
+args = ["server"]
+
+[language-server.biome]
+command = "biome"
+args = ["lsp-proxy"]
+
+[[language]]
+name = "python"
+language-servers = ["ruff"]
+formatter = { command = "ruff", args = ["format", "-"] }
+auto-format = true
+
+[[language]]
+name = "typescript"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.ts"] }
+auto-format = true
+
+[[language]]
+name = "tsx"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.tsx"] }
+auto-format = true
+
+[[language]]
+name = "javascript"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.js"] }
+auto-format = true
+
+[[language]]
+name = "jsx"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.jsx"] }
+auto-format = true
+
+[[language]]
+name = "json"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.json"] }
+auto-format = true
+
+[[language]]
+name = "css"
+language-servers = ["biome"]
+formatter = { command = "biome", args = ["format", "--stdin-file-path", "file.css"] }
+auto-format = true

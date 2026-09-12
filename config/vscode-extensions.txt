@@ -1,5 +1,5 @@
-# VS Code extensions bundled as .vsix (installed for the user at first login).
-# Format: publisher.name  (optionally publisher.name@version)
+# Only used when VS Code ("code") is in config/packages/gui.txt and
+# BUNDLE_VSCODE_EXTENSIONS=1. The image ships Helix instead (docs/editor.md).
 ms-python.python
 ms-python.vscode-pylance
 ms-python.debugpy

@@ -24,9 +24,14 @@ Decisions taken with the owner, and why.
 * **No toolchains on the host.** Node, Python and PostgreSQL run in
   containers, so host updates never touch project dependencies and the host
   stays at ~3 GB installed.
-* **sway, not X11 + a WM.** One package family, Wayland native for Chrome and
-  VS Code (`--ozone-platform-hint=auto` / `ELECTRON_OZONE_PLATFORM_HINT`),
-  XWayland kept for stragglers. No display manager: tty1 login starts sway.
+* **sway, not X11 + a WM.** One package family, Wayland native for Chrome
+  (`--ozone-platform-hint=auto`), XWayland kept for stragglers. No display
+  manager: tty1 login starts sway.
+* **Helix instead of VS Code.** VS Code was ~1 GB installed and Electron
+  heavy; Helix is a 20 MB static binary with LSP built in. ruff and biome
+  (static Rust binaries) provide Python and JS/TS tooling without Node or
+  Python on the host; TypeScript type checking runs from the dev container
+  (docs/editor.md). VS Code can be re-added with one line.
 * **Chromium as Google Chrome `.deb`.** On 24.04 `apt install chromium` is a
   snap. Chrome's deb repo is static and easy to mirror into the pool.
 * **mitmproxy in a container.** Avoids ~100 MB of Python on the host. The

@@ -70,12 +70,12 @@ docker pull nexus.office.local:8443/library/postgres:16-alpine
 For images you build yourself, push them to Nexus from any machine:
 `docker tag myapp nexus.office.local:8443/myapp:1 && docker push ...`.
 
-## VS Code extensions
+## Editor tooling
 
-Bundled `.vsix` are installed at the user's first login. Additional ones:
-download the `.vsix` at home (marketplace "Download Extension"), put it in
-`seed/vsix` on the stick or upload to `raw-lite/lite/vsix/`, then
-`code --install-extension file.vsix`.
+Helix, ruff, biome, lazydocker, bandwhich, systemctl-tui and opencode are
+static binaries listed in `config/github-binaries.txt`; a rebuild picks up
+their newest release and the ISO's `seed/bin` (uploaded to `raw-lite/lite/bin/`)
+lets machines fetch them without a reinstall.
 
 ## Node / Python / PostgreSQL
 
@@ -95,7 +95,6 @@ services:
     ports: ["5432:5432"]
 ```
 
-Or open the folder in VS Code and use "Dev Containers: Reopen in Container"
-(the extension is bundled). npm packages need a registry: create an npm
+npm packages need a registry: create an npm
 (hosted) repository in Nexus, publish what you need, and set
 `npm config set registry https://nexus.office.local/repository/npm-lite/`.

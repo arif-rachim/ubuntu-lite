@@ -1,8 +1,13 @@
 # Static binaries fetched from GitHub releases and installed to /usr/local/bin.
 # The newest tag is resolved with `git ls-remote` (no GitHub API needed), then
-# the asset template is expanded: {tag} = full tag (v0.25.2), {ver} = tag without the leading v.
-# Format: name|owner/repo|asset-template|path-inside-archive
+# the asset template is expanded: {tag} = full tag, {ver} = version without prefix/leading v.
+# Assets may be .tar.gz / .tar.xz / .zip archives or a bare binary.
+# Format: name|owner/repo|asset-template|path-inside-archive|tag-prefix|extra-copy(src:dst)
 lazydocker|jesseduffield/lazydocker|lazydocker_{ver}_Linux_x86_64.tar.gz|lazydocker
 bandwhich|imsnif/bandwhich|bandwhich-{tag}-x86_64-unknown-linux-gnu.tar.gz|bandwhich
 systemctl-tui|rgwood/systemctl-tui|systemctl-tui-x86_64-unknown-linux-musl.tar.gz|systemctl-tui
 opencode|sst/opencode|opencode-linux-x64.tar.gz|opencode
+# editor + language tooling (see docs/editor.md)
+hx|helix-editor/helix|helix-{ver}-x86_64-linux.tar.xz|hx||runtime:/usr/local/share/helix/runtime
+ruff|astral-sh/ruff|ruff-x86_64-unknown-linux-gnu.tar.gz|ruff
+biome|biomejs/biome|biome-linux-x64|biome-linux-x64|@biomejs/biome@

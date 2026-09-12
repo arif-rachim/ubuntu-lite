@@ -11,8 +11,8 @@ What is on the machine and nothing else:
 |---|---|---|
 | Base | Ubuntu 24.04 `minbase`, HWE kernel, systemd, networkd, ssh, nftables | no snapd, no cloud-init, no unattended-upgrades, no Ubuntu Pro |
 | Containers | Docker CE + compose + buildx | all toolchains (node, python, postgres) run in containers |
-| Desktop | sway (Wayland), foot, fuzzel, pipewire audio, clipboard | one compositor, no desktop environment, no display manager |
-| Apps | VS Code, Google Chrome (native Wayland) | development |
+| Desktop | sway (Wayland), foot, fuzzel, pipewire audio, clipboard | one compositor, no desktop environment, no display manager, no Electron |
+| Apps | Helix editor with ruff (Python) and biome (JS/TS) language servers, Google Chrome (native Wayland) | docs/editor.md |
 | Traffic | `httpmon` (mitmproxy in a container), `bandwhich`, `nethogs`, `tcpdump` | DevTools-like network view in the terminal |
 | On/off | `lazydocker` (containers), `systemctl-tui` (services) | friendly TUIs |
 | Office | Kerberos SSO (`lite-login`), OWA in Chrome (`Super+m`), Skype for Business chat via `pidgin-sipe`, `xfreerdp3`, `cifs-utils` | see docs/corporate.md |
@@ -20,7 +20,7 @@ What is on the machine and nothing else:
 | AI agent | `opencode` binary, `AGENTS.md` in the home directory explains this machine to it | docs/opencode.example.json |
 
 Everything installed comes from a package pool that is also shipped on the ISO,
-so the same set of `.deb` files, docker images and VS Code extensions can be
+so the same set of `.deb` files, docker images and static binaries can be
 uploaded to Nexus with one script.
 
 ## Quick start
@@ -63,7 +63,7 @@ overlay/           files copied into the root filesystem (installer, units, sway
 build/build.sh     mmdebstrap -> apt in chroot -> customize -> squashfs -> grub-mkrescue ISO
 build/keys.sh      GPG key for the Nexus apt repository
 scripts/           nexus-upload.sh (also on the ISO and installed as lite-nexus-upload), test-qemu.sh
-docs/              first-boot.md, nexus-setup.md, airgap-workflow.md, corporate.md, design.md
+docs/              first-boot.md, editor.md, nexus-setup.md, airgap-workflow.md, corporate.md, design.md
 out/               build output (git-ignored): iso, pool/, seed/, size-report.txt
 ```
 
@@ -75,8 +75,8 @@ image), `pool/extra` (optional packages for Nexus), `seed/docker`, `seed/vsix`,
 
 * Edit `config/packages/*.txt`, rebuild. Anything in `nexus-extra.txt` is only
   downloaded to the pool, not installed.
-* Docker images: `config/docker-images.txt`. VS Code extensions:
-  `config/vscode-extensions.txt`. Static binaries: `config/github-binaries.txt`.
+* Docker images: `config/docker-images.txt`. Static binaries (Helix, ruff,
+  biome, lazydocker, opencode...): `config/github-binaries.txt`.
 * Firmware: `config/packages/firmware.txt` (or `FIRMWARE_MODE=full` if some
   hardware needs a vendor package that is not listed).
 * Resume a partial build: `make resume FROM=customize` (stages: rootfs,

@@ -212,6 +212,17 @@ stage_packages() {
 	apt_chroot install $list
 	# shellcheck disable=SC2086
 	in_chroot apt-mark manual $list "linux-image-$KERNEL_FLAVOUR" $extra_pkg >/dev/null
+	# the lists are authoritative: purge manually installed packages that were removed from them
+	local unwanted
+	unwanted=$(comm -23 <(in_chroot apt-mark showmanual | sort -u) \
+		<(printf '%s\n' $list "linux-image-$KERNEL_FLAVOUR" $extra_pkg "linux-image-$kver" "linux-modules-$kver" apt ca-certificates | sort -u) \
+		| grep -vE '^(linux-(image|modules|headers)-|initramfs-tools|apt$|ca-certificates$)' || true)
+	if [ -n "$unwanted" ]; then
+		log "purging packages no longer listed: $(echo $unwanted | tr '\n' ' ')"
+		# shellcheck disable=SC2086
+		apt_chroot purge $unwanted
+	fi
+	apt_chroot autoremove --purge
 
 	# collect every deb that went into the image
 	mkdir -p "$POOL/main"
@@ -237,25 +248,40 @@ stage_packages() {
 fetch_github_binaries() {
 	[ "${BUNDLE_GITHUB_BINARIES:-1}" = 1 ] || return 0
 	mkdir -p "$SEED/bin"
-	while IFS='|' read -r name repo template inner; do
+	while IFS='|' read -r name repo template inner prefix extra; do
 		[ -z "$name" ] && continue
-		local tgz="$SEED/bin/$name.tar.gz"
-		if [ ! -s "$tgz" ]; then
-			local tag ver asset url got=0
-			# newest tags first; a tag without the asset (nightly, unreleased) falls back to the previous one
-			for tag in $(git ls-remote --tags --refs "https://github.com/$repo" 2>/dev/null | sed 's#.*/##' | grep -E '^v?[0-9]+\.[0-9]+' | sort -Vr | head -n 6); do
-				ver=${tag#v}
+		local ext file tmp bin
+		case "$template" in
+			*.tar.gz|*.tgz) ext=tar.gz ;; *.tar.xz) ext=tar.xz ;; *.zip) ext=zip ;; *) ext=bin ;;
+		esac
+		file="$SEED/bin/$name.$ext"
+		if [ ! -s "$file" ]; then
+			local tag ver asset url got=0 line
+			# candidate tags newest first; a tag without the asset (nightly, unreleased) falls back to the previous one
+			while read -r ver tag; do
 				asset=${template//\{tag\}/$tag}; asset=${asset//\{ver\}/$ver}
 				url="https://github.com/$repo/releases/download/$tag/$asset"
-				if curl -fsSL -o "$tgz" "$url" 2>/dev/null; then log "fetched $name $tag"; echo "$url" > "$SEED/bin/$name.url"; got=1; break; fi
-			done
-			[ $got = 1 ] || { warn "no downloadable release asset for $name ($repo, $template)"; rm -f "$tgz"; continue; }
+				if curl -fsSL -o "$file" "$url" 2>/dev/null; then log "fetched $name $ver"; echo "$url" > "$SEED/bin/$name.url"; got=1; break; fi
+			done < <(git ls-remote --tags --refs "https://github.com/$repo" 2>/dev/null | sed 's#.*refs/tags/##' \
+				| { if [ -n "$prefix" ]; then grep -F "$prefix" | grep "^$prefix"; else grep -E '^v?[0-9]+\.[0-9]+'; fi; } \
+				| while read -r t; do v=${t#"$prefix"}; v=${v#v}; echo "$v $t"; done | grep -Ev '[a-z]' | sort -Vr | head -n 6)
+			[ $got = 1 ] || { warn "no downloadable release asset for $name ($repo, $template)"; rm -f "$file"; continue; }
 		fi
-		local tmp; tmp=$(mktemp -d)
-		tar -xzf "$tgz" -C "$tmp"
-		local bin; bin=$(find "$tmp" -type f -name "$inner" | head -n1)
-		[ -n "$bin" ] || { warn "$inner not found inside $tgz"; rm -rf "$tmp"; continue; }
+		tmp=$(mktemp -d)
+		case "$ext" in
+			tar.gz) tar -xzf "$file" -C "$tmp" ;;
+			tar.xz) tar -xJf "$file" -C "$tmp" ;;
+			zip) unzip -q "$file" -d "$tmp" ;;
+			bin) cp "$file" "$tmp/$inner" ;;
+		esac
+		bin=$(find "$tmp" -type f -name "$(basename "$inner")" | head -n1)
+		[ -n "$bin" ] || { warn "$inner not found inside $file"; rm -rf "$tmp"; continue; }
 		install -m755 "$bin" "$ROOTFS/usr/local/bin/$name"
+		if [ -n "$extra" ]; then
+			local src=${extra%%:*} dst=${extra#*:} srcdir
+			srcdir=$(find "$tmp" -type d -name "$src" | head -n1)
+			[ -n "$srcdir" ] && { rm -rf "$ROOTFS$dst"; mkdir -p "$(dirname "$ROOTFS$dst")"; cp -a "$srcdir" "$ROOTFS$dst"; } || warn "$src not found in $file"
+		fi
 		rm -rf "$tmp"
 	done < <(sed -e 's/#.*//' "$ROOT/config/github-binaries.txt" | grep -v '^[[:space:]]*$')
 }

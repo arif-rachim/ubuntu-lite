@@ -134,7 +134,7 @@ session, `/sound` for audio. Persistent shares go into `/etc/fstab` with
 
 ```bash
 mkdir ~/work && cd ~/work && git clone ...
-code .                     # VS Code, extensions pre-installed at first login
+hx .                       # Helix editor (Super+c), ruff + biome language servers, see editor.md
 # Node / Python / PostgreSQL run in containers, see airgap-workflow.md
 docker compose up -d
 lazydocker                 # containers on/off, logs

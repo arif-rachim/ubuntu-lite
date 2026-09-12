@@ -19,7 +19,8 @@ There are two places you can be running. Find out first:
 Hard rules in both places:
 
 1. Never add internet apt sources, PPAs, snap, flatpak, pip/npm on the host.
-   Toolchains (node, python, postgres) run in Docker containers.
+   Toolchains (node, python, postgres) run in Docker containers. The editor
+   is Helix (`hx`), not VS Code; see `/usr/share/doc/ubuntu-lite/editor.md`.
 2. Never edit files under `/usr/lib/ubuntu-lite/` or `/usr/share/ubuntu-lite/`
    on a machine; they come from the image. Configuration lives in
    `/etc/ubuntu-lite/site.conf` and is applied with `sudo lite-setup`.
@@ -40,9 +41,9 @@ Hard rules in both places:
 | `/etc/krb5.conf` | Kerberos (generated) |
 | `/etc/opt/chrome/policies/managed/lite-sso.json` | Chrome SSO allow-list (generated) |
 | `/etc/nftables.conf` | firewall, inbound ssh only; `sudo systemctl reload nftables` after edits |
-| `~/.config/sway/config` | window manager keys (Super+Enter terminal, Super+c VS Code, Super+b Chrome, Super+m OWA, Super+s Pidgin) |
+| `~/.config/sway/config` | window manager keys (Super+Enter terminal, Super+c Helix, Super+b Chrome, Super+m OWA, Super+s Pidgin) |
+| `~/.config/helix/` | editor config; `languages.toml` wires ruff (Python) and biome (JS/TS) as language servers |
 | `/usr/share/doc/ubuntu-lite/*.md` | full docs: first-boot, nexus-setup, airgap-workflow, corporate |
-| `/usr/share/ubuntu-lite/vsix/` | bundled VS Code extensions (`code --install-extension file.vsix`) |
 
 Helper commands: `lite-help` (cheat sheet), `sudo lite-setup` (office
 addresses), `sudo lite-setup --test` (connectivity check), `lite-login`
@@ -176,14 +177,14 @@ agent knows these rules.
 config/build.env            all knobs: user, kernel, Nexus/AD defaults, timezone
 config/packages/base.txt    boot, systemd, network, ssh, admin tools
 config/packages/docker.txt  Docker CE
-config/packages/gui.txt     sway, foot, fuzzel, pipewire, Chrome, VS Code
+config/packages/gui.txt     sway, foot, fuzzel, pipewire, Chrome
 config/packages/tools.txt   nethogs, tcpdump
 config/packages/corporate.txt  krb5-user, pidgin-sipe, cifs-utils, freerdp3-x11
 config/packages/firmware.txt   per-vendor firmware packages
 config/packages/nexus-extra.txt  downloaded to pool/extra ONLY (not installed): libreoffice, gimp, thunderbird, evolution ...
 config/docker-images.txt    images bundled on the ISO and pushed to Nexus
-config/vscode-extensions.txt  .vsix bundled and installed at first login
-config/github-binaries.txt  static binaries (lazydocker, bandwhich, systemctl-tui)
+config/github-binaries.txt  static binaries (helix, ruff, biome, lazydocker, bandwhich, systemctl-tui, opencode)
+config/vscode-extensions.txt  only used if VS Code is re-added to gui.txt
 config/ca/*.crt             office CA certificates baked into the trust store
 config/nexus/apt-signing.pub.asc  apt repo key (make keys); private half is git-ignored
 config/authorized_keys      ssh public keys for the user
@@ -222,16 +223,16 @@ cat out/size-report.txt
 * Only available in Nexus (installed on demand): add to
   `config/packages/nexus-extra.txt`. This is the preferred place for
   anything large or rarely used.
-* Remove: delete the line, `make resume FROM=packages`. Note that the
-  packages stage only adds; to drop something that is already in the
-  chroot run `make clean` first (full rebuild).
+* Remove: delete the line, `make resume FROM=packages`. The packages stage
+  purges packages that are no longer listed (the lists are authoritative).
 * Check a package exists in Ubuntu noble before adding it:
   `apt-cache policy <name>` on any Ubuntu 24.04, or
   `chroot out/work/rootfs apt-cache policy <name>` after a build.
 * Docker images: `config/docker-images.txt` (use slim/alpine tags).
-* VS Code extensions: `config/vscode-extensions.txt` (`publisher.name`).
 * Static binaries from GitHub: `config/github-binaries.txt`
-  (`name|owner/repo|asset-template|binary-in-archive`, `{tag}`/`{ver}` expand).
+  (`name|owner/repo|asset-template|binary-in-archive|tag-prefix|extra-copy`,
+  `{tag}`/`{ver}` expand; archives .tar.gz/.tar.xz/.zip or a bare binary).
+* Editor language servers: `overlay/etc/skel/.config/helix/languages.toml`.
 * Files or configuration on every machine: put them under `overlay/` with
   the final absolute path, `make resume FROM=customize`.
 

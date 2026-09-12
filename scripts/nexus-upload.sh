@@ -65,7 +65,7 @@ upload_docker() {
 upload_raw() {
 	echo "== raw: uploading extras to $NEXUS_RAW_REPO/lite/"
 	local f
-	for f in "$SRC"/seed/vsix/*.vsix "$SRC"/seed/bin/*.tar.gz "$SRC"/nexus/apt-signing.pub.asc "$SRC"/*.iso; do
+	for f in "$SRC"/seed/vsix/*.vsix "$SRC"/seed/bin/*.tar.gz "$SRC"/seed/bin/*.tar.xz "$SRC"/seed/bin/*.bin "$SRC"/nexus/apt-signing.pub.asc "$SRC"/*.iso; do
 		[ -f "$f" ] || continue
 		local sub; sub=$(basename "$(dirname "$f")"); [ "$sub" = "$(basename "$SRC")" ] && sub=iso
 		code=$(curl -sS -o /dev/null -w '%{http_code}' "${AUTH[@]}" --upload-file "$f" "$NEXUS_URL/repository/$NEXUS_RAW_REPO/lite/$sub/$(basename "$f")")
