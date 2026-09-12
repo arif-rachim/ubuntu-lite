@@ -5,3 +5,4 @@
 lazydocker|jesseduffield/lazydocker|lazydocker_{ver}_Linux_x86_64.tar.gz|lazydocker
 bandwhich|imsnif/bandwhich|bandwhich-{tag}-x86_64-unknown-linux-gnu.tar.gz|bandwhich
 systemctl-tui|rgwood/systemctl-tui|systemctl-tui-x86_64-unknown-linux-musl.tar.gz|systemctl-tui
+opencode|sst/opencode|opencode-linux-x64.tar.gz|opencode

@@ -17,6 +17,7 @@ What is on the machine and nothing else:
 | On/off | `lazydocker` (containers), `systemctl-tui` (services) | friendly TUIs |
 | Office | Kerberos SSO (`lite-login`), OWA in Chrome (`Super+m`), Skype for Business chat via `pidgin-sipe`, `xfreerdp3`, `cifs-utils` | see docs/corporate.md |
 | Setup | `lite-setup` (Nexus, AD, OWA addresses), `lite-nexus-upload` | docs/first-boot.md |
+| AI agent | `opencode` binary, `AGENTS.md` in the home directory explains this machine to it | docs/opencode.example.json |
 
 Everything installed comes from a package pool that is also shipped on the ISO,
 so the same set of `.deb` files, docker images and VS Code extensions can be

@@ -241,15 +241,15 @@ fetch_github_binaries() {
 		[ -z "$name" ] && continue
 		local tgz="$SEED/bin/$name.tar.gz"
 		if [ ! -s "$tgz" ]; then
-			local tag ver asset url
-			tag=$(git ls-remote --tags --refs "https://github.com/$repo" 2>/dev/null | sed 's#.*/##' | grep -E '^v?[0-9]+\.[0-9]+' | sort -V | tail -n1)
-			[ -n "$tag" ] || { warn "cannot resolve latest tag of $repo"; continue; }
-			ver=${tag#v}
-			asset=${template//\{tag\}/$tag}; asset=${asset//\{ver\}/$ver}
-			url="https://github.com/$repo/releases/download/$tag/$asset"
-			log "fetching $name $tag"
-			curl -fsSL -o "$tgz" "$url" || { warn "download failed: $url"; rm -f "$tgz"; continue; }
-			echo "$url" > "$SEED/bin/$name.url"
+			local tag ver asset url got=0
+			# newest tags first; a tag without the asset (nightly, unreleased) falls back to the previous one
+			for tag in $(git ls-remote --tags --refs "https://github.com/$repo" 2>/dev/null | sed 's#.*/##' | grep -E '^v?[0-9]+\.[0-9]+' | sort -Vr | head -n 6); do
+				ver=${tag#v}
+				asset=${template//\{tag\}/$tag}; asset=${asset//\{ver\}/$ver}
+				url="https://github.com/$repo/releases/download/$tag/$asset"
+				if curl -fsSL -o "$tgz" "$url" 2>/dev/null; then log "fetched $name $tag"; echo "$url" > "$SEED/bin/$name.url"; got=1; break; fi
+			done
+			[ $got = 1 ] || { warn "no downloadable release asset for $name ($repo, $template)"; rm -f "$tgz"; continue; }
 		fi
 		local tmp; tmp=$(mktemp -d)
 		tar -xzf "$tgz" -C "$tmp"
@@ -336,7 +336,7 @@ stage_customize() {
 			printf '%s=%q\n' "$k" "${!k:-}"
 		done
 	} > "$ROOTFS/etc/ubuntu-lite/site.conf"
-	cp "$ROOT/README.md" "$ROOT"/docs/*.md "$ROOTFS/usr/share/doc/ubuntu-lite/" 2>/dev/null || true
+	cp "$ROOT/README.md" "$ROOT/AGENTS.md" "$ROOT"/docs/*.md "$ROOT"/docs/*.json "$ROOTFS/usr/share/doc/ubuntu-lite/" 2>/dev/null || true
 	install -m755 "$ROOT/scripts/nexus-upload.sh" "$ROOTFS/usr/lib/ubuntu-lite/nexus-upload.sh"
 	ln -sf /usr/lib/ubuntu-lite/nexus-upload.sh "$ROOTFS/usr/local/bin/lite-nexus-upload"
 

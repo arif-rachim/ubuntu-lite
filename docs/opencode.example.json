@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "office": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Office LLM",
+      "options": { "baseURL": "http://llm.corp.example.com:8000/v1" },
+      "models": { "qwen3.5": { "name": "Qwen 3.5" } }
+    }
+  },
+  "model": "office/qwen3.5"
+}
