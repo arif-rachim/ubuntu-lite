@@ -4,7 +4,9 @@ The office runs Active Directory, on-prem Exchange with OWA, and Skype for
 Business Server. The machine stays a local-user workstation (no domain join);
 a Kerberos ticket gives single sign-on to everything that speaks Negotiate.
 
-Set in `config/build.env` before building (all optional):
+Set the values on the machine with `sudo lite-setup` (interactive, or
+`--file answers.conf`). `config/build.env` only provides the defaults baked
+into the image. All optional:
 
 | Variable | Example | Used for |
 |---|---|---|
@@ -15,7 +17,8 @@ Set in `config/build.env` before building (all optional):
 | `EXTRA_HOSTS` | `10.1.1.5 dc1.corp.example.com dc1\|10.1.1.20 mail.corp.example.com` | `/etc/hosts` when there is no DNS |
 
 The office CA in `config/ca/*.crt` is trusted system-wide, so HTTPS to OWA,
-Exchange and the SfB front end validates.
+Exchange and the SfB front end validates. Step-by-step client setup
+(Thunderbird, Pidgin, shares, RDP) is in `first-boot.md`.
 
 ## Daily use
 

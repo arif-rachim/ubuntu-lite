@@ -1,0 +1,180 @@
+#!/bin/bash
+# lite-setup: point this machine at the office (Nexus, AD/Kerberos, OWA, hosts).
+# Run after the first boot, or whenever an address changes. Needs root.
+#
+#   sudo lite-setup                 interactive, current values as defaults
+#   sudo lite-setup --file f.conf   non-interactive from an answer file (KEY=value lines)
+#   sudo lite-setup --set KEY=VALUE [--set ...]   change single values
+#   sudo lite-setup --show          print the current configuration
+#   sudo lite-setup --test          check Nexus (apt, docker) and Kerberos reachability
+#   sudo lite-setup --apply         re-apply the stored configuration (used by the image build)
+#
+# Keys: NEXUS_URL NEXUS_APT_REPO NEXUS_DOCKER_REGISTRY NEXUS_DOCKER_INSECURE NEXUS_IP
+#       AD_REALM AD_DOMAIN AD_KDC OWA_URL EXTRA_HOSTS
+set -euo pipefail
+CONF=/etc/ubuntu-lite/site.conf
+KEYS=(NEXUS_URL NEXUS_APT_REPO NEXUS_DOCKER_REGISTRY NEXUS_DOCKER_INSECURE NEXUS_IP AD_REALM AD_DOMAIN AD_KDC OWA_URL EXTRA_HOSTS)
+declare -A HELP=(
+	[NEXUS_URL]="Nexus base URL, e.g. https://nexus.office.local"
+	[NEXUS_APT_REPO]="Nexus apt (hosted) repository name"
+	[NEXUS_DOCKER_REGISTRY]="Nexus docker registry host:port, e.g. nexus.office.local:8443"
+	[NEXUS_DOCKER_INSECURE]="1 if the docker registry is plain HTTP, else 0"
+	[NEXUS_IP]="IP of the Nexus host when there is no DNS (adds /etc/hosts entry), or empty"
+	[AD_REALM]="Kerberos realm = AD domain in UPPER CASE, e.g. CORP.EXAMPLE.COM, or empty"
+	[AD_DOMAIN]="DNS domain in lower case for Chrome SSO, e.g. corp.example.com"
+	[AD_KDC]="Domain controllers, space separated (needed without DNS SRV records)"
+	[OWA_URL]="Outlook Web App URL for Super+m, e.g. https://mail.corp.example.com/owa"
+	[EXTRA_HOSTS]="Extra /etc/hosts entries 'ip name [alias]' separated by |"
+)
+for k in "${KEYS[@]}"; do declare "$k="; done
+NEXUS_APT_REPO=apt-lite; NEXUS_DOCKER_INSECURE=0
+# shellcheck disable=SC1090
+[ -f "$CONF" ] && . "$CONF"
+
+die() { echo "lite-setup: $*" >&2; exit 1; }
+need_root() { [ "$(id -u)" = 0 ] || die "run with sudo"; }
+
+save() {
+	mkdir -p "$(dirname "$CONF")"
+	{ echo "# written by lite-setup on $(date -u +%FT%TZ)"; for k in "${KEYS[@]}"; do printf '%s=%q\n' "$k" "${!k}"; done; } > "$CONF"
+	chmod 644 "$CONF"
+}
+
+apply() {
+	local host scheme=https
+	host=$(echo "$NEXUS_URL" | sed -E 's#^[a-z]+://##; s#[:/].*##')
+
+	# /etc/hosts block
+	sed -i '/^# lite-setup begin/,/^# lite-setup end/d' /etc/hosts
+	{
+		echo "# lite-setup begin"
+		[ -n "$NEXUS_IP" ] && echo "$NEXUS_IP $host ${NEXUS_DOCKER_REGISTRY%%:*}" | awk '{ line=$1; for(i=2;i<=NF;i++) if(!seen[$i]++) line=line" "$i; print line }'
+		[ -n "$EXTRA_HOSTS" ] && echo "$EXTRA_HOSTS" | tr '|' '\n' | sed 's/^[[:space:]]*//' | grep -v '^$'
+		echo "# lite-setup end"
+	} >> /etc/hosts
+
+	# apt: Nexus is the only source
+	rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
+	if [ -n "$NEXUS_URL" ]; then
+		{
+			echo "Types: deb"
+			echo "URIs: $NEXUS_URL/repository/$NEXUS_APT_REPO"
+			echo "Suites: $(. /etc/os-release; echo "$VERSION_CODENAME")"
+			echo "Components: main"
+			if [ -s /etc/apt/keyrings/nexus-apt.asc ]; then echo "Signed-By: /etc/apt/keyrings/nexus-apt.asc"; else echo "Trusted: yes"; fi
+		} > /etc/apt/sources.list.d/nexus.sources
+	fi
+
+	# docker registry mirror
+	[ "$NEXUS_DOCKER_INSECURE" = 1 ] && scheme=http
+	mkdir -p /etc/docker
+	[ -s /etc/docker/daemon.json ] || echo '{}' > /etc/docker/daemon.json
+	if [ -n "$NEXUS_DOCKER_REGISTRY" ]; then
+		jq --arg m "$scheme://$NEXUS_DOCKER_REGISTRY" --arg r "$NEXUS_DOCKER_REGISTRY" --argjson ins "$NEXUS_DOCKER_INSECURE" \
+			'.["registry-mirrors"]=[$m] | if $ins==1 then .["insecure-registries"]=[$r] else del(.["insecure-registries"]) end
+			 | .["log-driver"]="json-file" | .["log-opts"]={"max-size":"10m","max-file":"3"}' /etc/docker/daemon.json > /etc/docker/daemon.json.new
+	else
+		jq 'del(.["registry-mirrors"]) | del(.["insecure-registries"])' /etc/docker/daemon.json > /etc/docker/daemon.json.new
+	fi
+	mv /etc/docker/daemon.json.new /etc/docker/daemon.json
+
+	# kerberos
+	if [ -n "$AD_REALM" ]; then
+		local kdc_lines="" k dns_lookup=true dom
+		for k in $AD_KDC; do kdc_lines="$kdc_lines		kdc = $k"$'\n'; done
+		[ -n "$AD_KDC" ] && dns_lookup=false
+		dom=${AD_DOMAIN:-$(echo "$AD_REALM" | tr 'A-Z' 'a-z')}
+		cat > /etc/krb5.conf <<-KRB
+		[libdefaults]
+			default_realm = $AD_REALM
+			dns_lookup_kdc = $dns_lookup
+			dns_lookup_realm = false
+			rdns = false
+			forwardable = true
+			ticket_lifetime = 10h
+			renew_lifetime = 7d
+			default_ccache_name = KEYRING:persistent:%{uid}
+
+		[realms]
+			$AD_REALM = {
+		${kdc_lines}		}
+
+		[domain_realm]
+			.$dom = $AD_REALM
+			$dom = $AD_REALM
+		KRB
+	fi
+
+	# chrome single sign-on policy
+	mkdir -p /etc/opt/chrome/policies/managed
+	if [ -n "$AD_DOMAIN" ]; then
+		jq -n --arg d "*.$AD_DOMAIN" '{AuthServerAllowlist:$d, AuthNegotiateDelegateAllowlist:$d, AuthSchemes:"basic,digest,ntlm,negotiate"}' \
+			> /etc/opt/chrome/policies/managed/lite-sso.json
+	else
+		rm -f /etc/opt/chrome/policies/managed/lite-sso.json
+	fi
+}
+
+restart_services() {
+	systemctl is-active --quiet docker && systemctl restart docker || true
+	echo "== apt update"
+	apt-get update 2>&1 | tail -n 3 || true
+}
+
+test_all() {
+	local code
+	echo "== Nexus $NEXUS_URL"
+	code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$NEXUS_URL/service/rest/v1/status" || true)
+	[ "$code" = 200 ] && echo "   ok (HTTP 200)" || echo "   FAIL (HTTP ${code:-none}); check NEXUS_URL, NEXUS_IP, the office CA in /usr/local/share/ca-certificates"
+	echo "== apt"
+	if apt-get update >/dev/null 2>&1; then echo "   ok ($(apt-cache policy 2>/dev/null | grep -c "$NEXUS_URL") source lines from Nexus)"; else echo "   FAIL: apt-get update (is apt-lite populated? see docs/nexus-setup.md)"; fi
+	if [ -n "$NEXUS_DOCKER_REGISTRY" ]; then
+		local scheme=https; [ "$NEXUS_DOCKER_INSECURE" = 1 ] && scheme=http
+		echo "== docker registry $scheme://$NEXUS_DOCKER_REGISTRY/v2/"
+		code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$scheme://$NEXUS_DOCKER_REGISTRY/v2/" || true)
+		case "$code" in 200|401) echo "   ok (HTTP $code)" ;; *) echo "   FAIL (HTTP ${code:-none}); check the docker connector port and TLS" ;; esac
+	fi
+	if [ -n "$AD_REALM" ]; then
+		echo "== Kerberos realm $AD_REALM"
+		for k in ${AD_KDC:-}; do
+			if timeout 5 bash -c "</dev/tcp/$k/88" 2>/dev/null; then echo "   ok: $k:88 reachable"; else echo "   FAIL: $k:88 not reachable"; fi
+		done
+		[ -z "$AD_KDC" ] && echo "   (no AD_KDC set, relying on DNS SRV records)"
+	fi
+}
+
+show() { for k in "${KEYS[@]}"; do printf '%-22s = %s\n' "$k" "${!k}"; done; }
+
+interactive() {
+	echo "lite-setup: press Enter to keep the value in brackets, '-' to clear it."
+	local v
+	for k in "${KEYS[@]}"; do
+		printf '\n%s\n' "${HELP[$k]}"
+		read -rp "$k [${!k}]: " v
+		case "$v" in "") ;; -) declare -g "$k=" ;; *) declare -g "$k=$v" ;; esac
+	done
+}
+
+MODE=interactive; OFFLINE=0; FILE=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--file) FILE=$2; MODE=file; shift ;;
+		--set) [[ "$2" =~ ^([A-Z_]+)=(.*)$ ]] || die "bad --set $2"; declare -g "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"; MODE=set; shift ;;
+		--show) MODE=show ;;
+		--test) MODE=test ;;
+		--apply) MODE=apply ;;
+		--offline) OFFLINE=1 ;;
+		-h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+		*) die "unknown option $1" ;;
+	esac; shift
+done
+case "$MODE" in
+	show) show; exit 0 ;;
+	test) test_all; exit 0 ;;
+	file) need_root; [ -f "$FILE" ] || die "$FILE not found"; . "$FILE" ;;
+	interactive) need_root; interactive ;;
+	set|apply) need_root ;;
+esac
+save; apply
+echo "lite-setup: configuration written to $CONF and applied."
+[ "$OFFLINE" = 1 ] || { restart_services; echo; echo "Run 'sudo lite-setup --test' to verify connectivity."; }

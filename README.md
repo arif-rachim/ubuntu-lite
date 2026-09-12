@@ -15,7 +15,8 @@ What is on the machine and nothing else:
 | Apps | VS Code, Google Chrome (native Wayland) | development |
 | Traffic | `httpmon` (mitmproxy in a container), `bandwhich`, `nethogs`, `tcpdump` | DevTools-like network view in the terminal |
 | On/off | `lazydocker` (containers), `systemctl-tui` (services) | friendly TUIs |
-| Office | Kerberos SSO (`lite-login`), OWA in Chrome (`Super+m`), Skype for Business chat via `pidgin-sipe` | see docs/corporate.md |
+| Office | Kerberos SSO (`lite-login`), OWA in Chrome (`Super+m`), Skype for Business chat via `pidgin-sipe`, `xfreerdp3`, `cifs-utils` | see docs/corporate.md |
+| Setup | `lite-setup` (Nexus, AD, OWA addresses), `lite-nexus-upload` | docs/first-boot.md |
 
 Everything installed comes from a package pool that is also shipped on the ISO,
 so the same set of `.deb` files, docker images and VS Code extensions can be
@@ -48,8 +49,10 @@ the "Reinstall" GRUB entry. Kernel options: `lite.disk=/dev/nvme0n1`,
 `lite.hostname=name`, `lite.force=1`.
 
 First login: user from `USERNAME` (default `dev`) with `USER_PASSWORD`, which
-must be changed immediately. Logging in on tty1 starts sway. Type `lite-help`
-for the cheat sheet.
+must be changed immediately. Logging in on tty1 starts sway. Then
+`sudo lite-setup` points the machine at Nexus and the AD domain; see
+`docs/first-boot.md` for the whole first-day checklist. `lite-help` prints
+the cheat sheet.
 
 ## Layout
 
@@ -59,7 +62,7 @@ overlay/           files copied into the root filesystem (installer, units, sway
 build/build.sh     mmdebstrap -> apt in chroot -> customize -> squashfs -> grub-mkrescue ISO
 build/keys.sh      GPG key for the Nexus apt repository
 scripts/           nexus-upload.sh (also on the ISO and installed as lite-nexus-upload), test-qemu.sh
-docs/              nexus-setup.md, airgap-workflow.md, design.md
+docs/              first-boot.md, nexus-setup.md, airgap-workflow.md, corporate.md, design.md
 out/               build output (git-ignored): iso, pool/, seed/, size-report.txt
 ```
 

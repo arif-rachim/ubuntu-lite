@@ -12,6 +12,10 @@ Traffic            bandwhich             live in/out per process and connection 
                    nethogs               bandwidth per process
                    httpmon [--docker]    HTTP(S) flows like DevTools Network, 'httpmon trust' for TLS
                    tcpdump -i any        raw capture
+Setup              sudo lite-setup       Nexus / AD / OWA addresses (--test to verify), docs: first-boot.md
+                   lite-nexus-upload     push ISO content (debs, images) into Nexus
+Windows            xfreerdp3 /v:host /u:'DOM\user' /dynamic-resolution /clipboard      RDP like mstsc
+                   sudo mount -t cifs //server/share /mnt -o sec=krb5,uid=$USER          Windows share
 Office             lite-login [user]     Kerberos ticket for the AD realm (then Chrome/OWA/intranet SSO)
                    Super+m / lite-owa    Outlook Web App in Chrome      klist  shows the ticket
                    Super+s / pidgin      Skype for Business chat (pidgin-sipe), see docs/corporate.md

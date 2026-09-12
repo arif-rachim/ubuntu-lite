@@ -4,7 +4,6 @@
 termshark
 iftop
 ncdu
-jq
 mc
 strace
 dnsutils
@@ -22,3 +21,14 @@ python3-minimal
 build-essential
 fonts-noto-color-emoji
 thunderbird
+libreoffice-writer
+libreoffice-calc
+libreoffice-impress
+fonts-crosextra-carlito
+fonts-crosextra-caladea
+gimp
+remmina
+pcmanfm
+gvfs-backends
+evolution
+evolution-ews

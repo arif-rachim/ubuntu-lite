@@ -309,39 +309,6 @@ fetch_docker_images() {
 	done
 }
 
-# Kerberos + Chrome SSO + OWA shortcut, driven by AD_* / OWA_URL. Safe no-op when unset.
-configure_corporate() {
-	if [ -n "${AD_REALM:-}" ]; then
-		local kdc_lines="" k
-		for k in ${AD_KDC:-}; do kdc_lines="$kdc_lines		kdc = $k"$'\n'; done
-		local dns_lookup=true; [ -n "${AD_KDC:-}" ] && dns_lookup=false
-		cat > "$ROOTFS/etc/krb5.conf" <<-KRB
-		[libdefaults]
-			default_realm = $AD_REALM
-			dns_lookup_kdc = $dns_lookup
-			dns_lookup_realm = false
-			rdns = false
-			forwardable = true
-			ticket_lifetime = 10h
-			renew_lifetime = 7d
-			default_ccache_name = KEYRING:persistent:%{uid}
-
-		[realms]
-			$AD_REALM = {
-		${kdc_lines}		}
-
-		[domain_realm]
-			.${AD_DOMAIN:-$(echo "$AD_REALM" | tr 'A-Z' 'a-z')} = $AD_REALM
-			${AD_DOMAIN:-$(echo "$AD_REALM" | tr 'A-Z' 'a-z')} = $AD_REALM
-		KRB
-	fi
-	if [ -n "${AD_DOMAIN:-}" ]; then
-		mkdir -p "$ROOTFS/etc/opt/chrome/policies/managed"
-		jq -n --arg d "*.$AD_DOMAIN" '{AuthServerAllowlist:$d, AuthNegotiateDelegateAllowlist:$d, AuthSchemes:"basic,digest,ntlm,negotiate"}' \
-			> "$ROOTFS/etc/opt/chrome/policies/managed/lite-sso.json"
-	fi
-}
-
 stage_customize() {
 	log "stage customize"
 	[ -f "$WORK/kver" ] || die "run stage packages first"
@@ -350,7 +317,6 @@ stage_customize() {
 
 	# overlay
 	cp -a "$ROOT/overlay/." "$ROOTFS/"
-	rm -f "$ROOTFS/etc/docker/daemon.json.tmpl"
 
 	# image metadata + runtime config for the installer
 	mkdir -p "$ROOTFS/usr/share/ubuntu-lite" "$ROOTFS/etc/ubuntu-lite" "$ROOTFS/usr/share/doc/ubuntu-lite"
@@ -359,14 +325,15 @@ stage_customize() {
 	BUILD_ID=$BUILD_ID
 	USERNAME=$USERNAME
 	SWAP_SIZE=$SWAP_SIZE
-	NEXUS_URL=$NEXUS_URL
-	NEXUS_APT_REPO=$NEXUS_APT_REPO
-	NEXUS_RAW_REPO=$NEXUS_RAW_REPO
-	NEXUS_DOCKER_REGISTRY=$NEXUS_DOCKER_REGISTRY
-	AD_REALM=$AD_REALM
-	AD_DOMAIN=$AD_DOMAIN
-	OWA_URL=$OWA_URL
 	CONF
+	# site defaults (Nexus, AD, OWA); changed later on the machine with `sudo lite-setup`
+	mkdir -p "$ROOTFS/etc/ubuntu-lite"
+	{
+		echo "# defaults from config/build.env at build time; run 'sudo lite-setup' to change"
+		for k in NEXUS_URL NEXUS_APT_REPO NEXUS_DOCKER_REGISTRY NEXUS_DOCKER_INSECURE NEXUS_IP AD_REALM AD_DOMAIN AD_KDC OWA_URL EXTRA_HOSTS; do
+			printf '%s=%q\n' "$k" "${!k:-}"
+		done
+	} > "$ROOTFS/etc/ubuntu-lite/site.conf"
 	cp "$ROOT/README.md" "$ROOT"/docs/*.md "$ROOTFS/usr/share/doc/ubuntu-lite/" 2>/dev/null || true
 	install -m755 "$ROOT/scripts/nexus-upload.sh" "$ROOTFS/usr/lib/ubuntu-lite/nexus-upload.sh"
 	ln -sf /usr/lib/ubuntu-lite/nexus-upload.sh "$ROOTFS/usr/local/bin/lite-nexus-upload"
@@ -374,9 +341,6 @@ stage_customize() {
 	# identity, locale, console
 	echo "ubuntu-lite" > "$ROOTFS/etc/hostname"
 	printf '127.0.0.1 localhost\n127.0.1.1 ubuntu-lite\n::1 localhost ip6-localhost ip6-loopback\n' > "$ROOTFS/etc/hosts"
-	[ -n "$NEXUS_IP" ] && echo "$NEXUS_IP ${NEXUS_DOCKER_REGISTRY%%:*} $(echo "$NEXUS_URL" | sed -E 's#^[a-z]+://##; s#[:/].*##')" >> "$ROOTFS/etc/hosts"
-	[ -n "${EXTRA_HOSTS:-}" ] && echo "$EXTRA_HOSTS" | tr '|' '\n' | sed 's/^[[:space:]]*//' | grep -v '^$' >> "$ROOTFS/etc/hosts"
-	configure_corporate
 	sed -i "s/^# *$LOCALE UTF-8/$LOCALE UTF-8/" "$ROOTFS/etc/locale.gen"
 	grep -q "^$LOCALE UTF-8" "$ROOTFS/etc/locale.gen" || echo "$LOCALE UTF-8" >> "$ROOTFS/etc/locale.gen"
 	in_chroot locale-gen >/dev/null
@@ -409,38 +373,18 @@ stage_customize() {
 			> "$ROOTFS/etc/systemd/system/getty@tty1.service.d/autologin.conf"
 	fi
 
-	# office CA + Nexus as the only apt/docker source
+
+	# office CA, then Nexus/AD/OWA via the same tool the user runs after install
 	local ca
 	for ca in "$ROOT"/config/ca/*.crt; do [ -f "$ca" ] && cp "$ca" "$ROOTFS/usr/local/share/ca-certificates/"; done
 	in_chroot update-ca-certificates >/dev/null
-	rm -f "$ROOTFS"/etc/apt/sources.list "$ROOTFS"/etc/apt/sources.list.d/*
 	mkdir -p "$ROOTFS/etc/apt/keyrings"
 	if [ -f "$ROOT/config/nexus/apt-signing.pub.asc" ]; then
 		cp "$ROOT/config/nexus/apt-signing.pub.asc" "$ROOTFS/etc/apt/keyrings/nexus-apt.asc"
-		cat > "$ROOTFS/etc/apt/sources.list.d/nexus.sources" <<-SRC
-		Types: deb
-		URIs: $NEXUS_URL/repository/$NEXUS_APT_REPO
-		Suites: $UBUNTU_SUITE
-		Components: main
-		Signed-By: /etc/apt/keyrings/nexus-apt.asc
-		SRC
 	else
 		warn "config/nexus/apt-signing.pub.asc missing (run build/keys.sh); Nexus apt source will be marked trusted=yes"
-		cat > "$ROOTFS/etc/apt/sources.list.d/nexus.sources" <<-SRC
-		Types: deb
-		URIs: $NEXUS_URL/repository/$NEXUS_APT_REPO
-		Suites: $UBUNTU_SUITE
-		Components: main
-		Trusted: yes
-		SRC
 	fi
-	local scheme=https
-	[ "${NEXUS_DOCKER_INSECURE:-0}" = 1 ] && scheme=http
-	sed "s#@DOCKER_MIRROR@#$scheme://$NEXUS_DOCKER_REGISTRY#" "$ROOT/overlay/etc/docker/daemon.json.tmpl" > "$ROOTFS/etc/docker/daemon.json"
-	if [ "$scheme" = http ]; then
-		jq --arg r "$NEXUS_DOCKER_REGISTRY" '. + {"insecure-registries": [$r]}' "$ROOTFS/etc/docker/daemon.json" > "$ROOTFS/etc/docker/daemon.json.new"
-		mv "$ROOTFS/etc/docker/daemon.json.new" "$ROOTFS/etc/docker/daemon.json"
-	fi
+	in_chroot /usr/lib/ubuntu-lite/lite-setup --apply --offline >/dev/null
 
 	# services
 	in_chroot systemctl enable ssh docker containerd nftables systemd-networkd systemd-resolved lite-installer lite-firstboot >/dev/null 2>&1

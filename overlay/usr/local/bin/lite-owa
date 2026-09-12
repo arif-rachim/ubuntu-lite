@@ -1,5 +1,6 @@
 #!/bin/bash
 # Open Outlook Web App as its own window
 . /usr/share/ubuntu-lite/lite.conf
+[ -f /etc/ubuntu-lite/site.conf ] && . /etc/ubuntu-lite/site.conf
 [ -n "${OWA_URL:-}" ] || { echo "OWA_URL is not configured in this image (config/build.env)"; exit 1; }
 exec chrome --app="$OWA_URL" "$@"

@@ -4,3 +4,5 @@ krb5-user
 libsasl2-modules-gssapi-mit
 pidgin
 pidgin-sipe
+cifs-utils
+freerdp3-x11

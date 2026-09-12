@@ -44,3 +44,4 @@ pciutils
 usbutils
 bash-completion
 unzip
+jq
