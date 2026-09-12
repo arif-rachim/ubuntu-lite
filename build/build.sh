@@ -20,6 +20,8 @@ load_env() {
 		line=${line%%#*}
 		[[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]] || continue
 		k=${BASH_REMATCH[1]}; v=${BASH_REMATCH[2]}
+		v=${v%"${v##*[![:space:]]}"}                      # trim trailing spaces
+		case "$v" in \"*\") v=${v#\"}; v=${v%\"} ;; \'*\') v=${v#\'}; v=${v%\'} ;; esac   # strip quotes
 		[ -z "${!k+x}" ] && export "$k=$v" || true
 	done < "$f"
 }
