@@ -1,0 +1,7 @@
+#!/bin/sh
+cat <<'MOTD'
+ ubuntu-lite  |  sway: Super+Enter terminal, Super+d launcher, Super+c VS Code, Super+b Chrome
+   lazydocker      containers on/off, logs        systemctl-tui   services on/off
+   bandwhich       live in/out per process        nethogs         bandwidth per process
+   httpmon         HTTP(S) inspector (mitmproxy)  lite-help       full cheat sheet
+MOTD

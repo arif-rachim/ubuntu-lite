@@ -1,0 +1,54 @@
+# initramfs-tools boot script, selected with kernel parameter boot=lite
+# Finds the ISO/USB labelled UBUNTU_LITE, mounts /lite/filesystem.squashfs and
+# stacks a tmpfs overlay on top so the live system is writable.
+# Exposed to the running system as:
+#   /run/lite/iso  - the ISO (read-only)
+#   /run/lite/ro   - the squashfs (read-only, used by the installer as source)
+
+mount_top()      { :; }
+mount_premount() { :; }
+mount_bottom()   { :; }
+
+mountroot() {
+	[ "$quiet" != "y" ] && log_begin_msg "Starting ubuntu-lite live boot"
+	modprobe loop 2>/dev/null || true
+	modprobe squashfs 2>/dev/null || true
+	modprobe overlay 2>/dev/null || true
+	modprobe isofs 2>/dev/null || true
+	modprobe vfat 2>/dev/null || true
+
+	LABEL="UBUNTU_LITE"
+	for x in $(cat /proc/cmdline); do
+		case "$x" in
+			lite.label=*) LABEL="${x#lite.label=}" ;;
+		esac
+	done
+
+	dev=""
+	i=0
+	while [ $i -lt 60 ]; do
+		udevadm settle --timeout=2 2>/dev/null || true
+		dev=$(blkid -L "$LABEL" 2>/dev/null || true)
+		[ -n "$dev" ] && break
+		[ $i -eq 0 ] && echo "lite: waiting for device labelled $LABEL ..."
+		sleep 1
+		i=$((i + 1))
+	done
+	if [ -z "$dev" ]; then
+		panic "lite: could not find a filesystem labelled $LABEL"
+	fi
+
+	mkdir -p /run/lite/iso /run/lite/ro /run/lite/rw
+	mount -o ro "$dev" /run/lite/iso || panic "lite: cannot mount $dev"
+	loopdev=$(losetup -f) || panic "lite: no free loop device"
+	losetup -r "$loopdev" /run/lite/iso/lite/filesystem.squashfs || panic "lite: losetup failed"
+	mount -t squashfs -o ro "$loopdev" /run/lite/ro || panic "lite: cannot mount squashfs"
+	mount -t tmpfs -o mode=0755 tmpfs /run/lite/rw
+	mkdir -p /run/lite/rw/upper /run/lite/rw/work
+	mount -t overlay overlay \
+		-o lowerdir=/run/lite/ro,upperdir=/run/lite/rw/upper,workdir=/run/lite/rw/work \
+		"${rootmnt}" || panic "lite: cannot mount overlay"
+
+	# /run is moved into the real root by init, so /run/lite/* stay reachable.
+	[ "$quiet" != "y" ] && log_end_msg
+}

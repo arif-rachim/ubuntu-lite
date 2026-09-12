@@ -1,0 +1,21 @@
+# Minimal Wayland desktop: sway (tiling compositor), foot (terminal),
+# fuzzel (launcher), audio via pipewire, Google Chrome and VS Code.
+sway
+swaybg
+foot
+fuzzel
+wl-clipboard
+xwayland
+libgl1-mesa-dri
+libegl-mesa0
+fonts-dejavu-core
+fonts-liberation
+dmz-cursor-theme
+adwaita-icon-theme
+pipewire
+pipewire-pulse
+wireplumber
+alsa-utils
+libnss3-tools
+google-chrome-stable
+code

@@ -1,0 +1,89 @@
+# ubuntu-lite sway config. Super (Mod4) is the modifier.
+set $mod Mod4
+set $term foot
+set $menu fuzzel
+font pango:DejaVu Sans 10
+
+output * bg #1d2021 solid_color
+input type:keyboard xkb_layout us
+input type:touchpad {
+	tap enabled
+	natural_scroll enabled
+}
+seat seat0 xcursor_theme DMZ-White 24
+
+# Apps
+bindsym $mod+Return exec $term
+bindsym $mod+d exec $menu
+bindsym $mod+c exec code
+bindsym $mod+b exec chrome
+bindsym $mod+Shift+b exec chrome --proxy-server=127.0.0.1:8080
+bindsym $mod+Shift+q kill
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit sway?' -B 'Yes' 'swaymsg exit'
+bindsym $mod+Shift+p exec swaynag -t warning -m 'Power off?' -B 'Yes' 'systemctl poweroff'
+
+# Focus / move
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Workspaces
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+
+# Layout
+bindsym $mod+v splitv
+bindsym $mod+s splith
+bindsym $mod+f fullscreen
+bindsym $mod+e layout toggle split
+bindsym $mod+w layout tabbed
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+r mode "resize"
+mode "resize" {
+	bindsym h resize shrink width 10px
+	bindsym j resize grow height 10px
+	bindsym k resize shrink height 10px
+	bindsym l resize grow width 10px
+	bindsym Return mode "default"
+	bindsym Escape mode "default"
+}
+floating_modifier $mod normal
+
+# Audio (pipewire via wireplumber)
+bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+bar {
+	position bottom
+	status_command while date +'%Y-%m-%d %H:%M'; do sleep 30; done
+	colors {
+		statusline #ffffff
+		background #282828
+	}
+}
+
+default_border pixel 2
+exec systemctl --user import-environment WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP

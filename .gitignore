@@ -1,0 +1,9 @@
+# build outputs
+out/
+*.iso
+*.squashfs
+# private signing material (never commit)
+config/nexus/*.key.asc
+config/nexus/*.passphrase
+# local overrides
+config/build.local.env

@@ -1,0 +1,9 @@
+# VS Code extensions bundled as .vsix (installed for the user at first login).
+# Format: publisher.name  (optionally publisher.name@version)
+ms-python.python
+ms-python.vscode-pylance
+ms-python.debugpy
+ms-vscode-remote.remote-containers
+ms-azuretools.vscode-docker
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode

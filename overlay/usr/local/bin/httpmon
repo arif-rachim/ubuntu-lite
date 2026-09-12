@@ -1,0 +1,71 @@
+#!/bin/bash
+# httpmon: HTTP(S) request/response inspector (mitmproxy console UI) running as
+# a docker container on the host network. Like the Chrome DevTools Network tab,
+# but for everything on this machine, in the terminal.
+#
+#   httpmon                     explicit proxy on :8080 (point apps/curl/Chrome at it)
+#   httpmon --docker            also transparently capture traffic leaving containers
+#   httpmon trust               trust the mitmproxy CA (system store + Chrome) so HTTPS decrypts
+#   httpmon untrust             remove that trust again
+#   httpmon -- <mitmproxy args> pass extra mitmproxy flags
+#
+# In the UI: arrows/enter to open a flow, 'q' back, '?' help. Chrome via proxy: Super+Shift+b.
+set -euo pipefail
+IMG=${HTTPMON_IMAGE:-mitmproxy/mitmproxy:11}
+CONF="$HOME/.mitmproxy"
+mkdir -p "$CONF"
+NFT_TABLE=lite_httpmon
+
+nft_on() {
+	sudo nft -f - <<NFT
+table ip $NFT_TABLE {
+	chain prerouting {
+		type nat hook prerouting priority -100;
+		iifname "docker0" tcp dport { 80, 443 } redirect to :8080
+		iifname "br-*" tcp dport { 80, 443 } redirect to :8080
+	}
+}
+NFT
+	echo "[httpmon] transparent capture of container traffic ON (docker0, br-*)"
+}
+nft_off() { sudo nft delete table ip $NFT_TABLE 2>/dev/null || true; }
+
+case "${1:-}" in
+	trust)
+		[ -f "$CONF/mitmproxy-ca-cert.pem" ] || { echo "run httpmon once first to generate the CA"; exit 1; }
+		sudo cp "$CONF/mitmproxy-ca-cert.pem" /usr/local/share/ca-certificates/mitmproxy.crt
+		sudo update-ca-certificates >/dev/null
+		mkdir -p "$HOME/.pki/nssdb"
+		certutil -d sql:"$HOME/.pki/nssdb" -N --empty-password 2>/dev/null || true
+		certutil -d sql:"$HOME/.pki/nssdb" -D -n mitmproxy 2>/dev/null || true
+		certutil -d sql:"$HOME/.pki/nssdb" -A -t "C,," -n mitmproxy -i "$CONF/mitmproxy-ca-cert.pem"
+		echo "[httpmon] CA trusted for curl/apt/system and Chrome. For node: export NODE_EXTRA_CA_CERTS=$CONF/mitmproxy-ca-cert.pem"
+		exit 0 ;;
+	untrust)
+		sudo rm -f /usr/local/share/ca-certificates/mitmproxy.crt
+		sudo update-ca-certificates --fresh >/dev/null
+		certutil -d sql:"$HOME/.pki/nssdb" -D -n mitmproxy 2>/dev/null || true
+		echo "[httpmon] CA removed"; exit 0 ;;
+esac
+
+TRANSPARENT=0
+ARGS=()
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--docker) TRANSPARENT=1 ;;
+		--) shift; ARGS+=("$@"); break ;;
+		*) ARGS+=("$1") ;;
+	esac
+	shift
+done
+
+MODE=(--mode regular)
+if [ "$TRANSPARENT" = 1 ]; then
+	MODE=(--mode regular --mode transparent)
+	nft_on
+	trap nft_off EXIT
+fi
+echo "[httpmon] proxy listening on 0.0.0.0:8080 (ctrl-c or 'q' to quit)"
+exec docker run --rm -it --net=host --cap-add NET_ADMIN --cap-add NET_RAW \
+	-v "$CONF:/home/mitmproxy/.mitmproxy" "$IMG" \
+	mitmproxy --listen-port 8080 "${MODE[@]}" "${ARGS[@]}"

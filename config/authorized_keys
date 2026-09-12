@@ -1,0 +1,2 @@
+# Put your SSH public key(s) here, one per line. If this file has no keys,
+# sshd allows password login; if it has keys, sshd is key-only.

@@ -1,0 +1,23 @@
+# NOT installed on the image. These (plus their missing dependencies) are
+# downloaded into pool/extra on the ISO so they can be uploaded to Nexus and
+# installed later with `apt install` when needed.
+termshark
+iftop
+ncdu
+jq
+mc
+strace
+dnsutils
+net-tools
+smartmontools
+nvme-cli
+lm-sensors
+vim
+ripgrep
+fd-find
+fzf
+bat
+btop
+python3-minimal
+build-essential
+fonts-noto-color-emoji

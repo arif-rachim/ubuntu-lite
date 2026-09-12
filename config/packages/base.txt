@@ -1,0 +1,46 @@
+# Base system: boot, init, network, ssh, minimal admin tooling.
+# One package per line, '#' comments allowed. Kernel is handled by build/build.sh
+# (KERNEL_FLAVOUR + matching linux-modules-extra).
+initramfs-tools
+intel-microcode
+amd64-microcode
+grub-efi-amd64-bin
+grub-efi-amd64-signed
+shim-signed
+grub2-common
+efibootmgr
+systemd
+systemd-sysv
+systemd-resolved
+libpam-systemd
+dbus
+dbus-user-session
+udev
+sudo
+locales
+tzdata
+kbd
+netplan.io
+iproute2
+iputils-ping
+nftables
+openssh-server
+openssh-client
+ca-certificates
+curl
+gnupg
+git
+nano
+less
+htop
+tmux
+rsync
+zstd
+gdisk
+dosfstools
+e2fsprogs
+util-linux
+pciutils
+usbutils
+bash-completion
+unzip

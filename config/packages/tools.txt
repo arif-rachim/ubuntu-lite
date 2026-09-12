@@ -1,0 +1,4 @@
+# Console tooling installed on the host (small, native). Bigger tools
+# (mitmproxy) run as docker containers via /usr/local/bin/httpmon.
+nethogs
+tcpdump

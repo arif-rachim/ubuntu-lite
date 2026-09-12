@@ -1,0 +1,7 @@
+# Static binaries fetched from GitHub releases and installed to /usr/local/bin.
+# The newest tag is resolved with `git ls-remote` (no GitHub API needed), then
+# the asset template is expanded: {tag} = full tag (v0.25.2), {ver} = tag without the leading v.
+# Format: name|owner/repo|asset-template|path-inside-archive
+lazydocker|jesseduffield/lazydocker|lazydocker_{ver}_Linux_x86_64.tar.gz|lazydocker
+bandwhich|imsnif/bandwhich|bandwhich-{tag}-x86_64-unknown-linux-gnu.tar.gz|bandwhich
+systemctl-tui|rgwood/systemctl-tui|systemctl-tui-x86_64-unknown-linux-musl.tar.gz|systemctl-tui

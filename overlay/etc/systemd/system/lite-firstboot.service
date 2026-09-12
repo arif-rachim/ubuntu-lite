@@ -1,0 +1,14 @@
+[Unit]
+Description=ubuntu-lite first boot setup (ssh host keys, seed docker images)
+ConditionPathExists=!/var/lib/ubuntu-lite/firstboot.done
+ConditionKernelCommandLine=!boot=lite
+After=local-fs.target
+Before=ssh.service docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/ubuntu-lite/firstboot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

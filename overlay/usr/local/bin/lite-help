@@ -1,0 +1,20 @@
+#!/bin/sh
+cat <<'H'
+ubuntu-lite cheat sheet
+=======================
+Desktop (sway)     Super+Enter terminal  Super+d launcher  Super+c VS Code  Super+b Chrome
+                   Super+Shift+b Chrome through httpmon proxy   Super+1..5 workspaces
+                   Super+Shift+q close   Super+f fullscreen     Super+Shift+e exit sway
+Containers         lazydocker            start/stop/restart containers, logs, images
+                   docker compose up -d  usual docker CLI, images come from Nexus
+Services           systemctl-tui         start/stop/enable services with arrows + keys
+Traffic            bandwhich             live in/out per process and connection (needs sudo)
+                   nethogs               bandwidth per process
+                   httpmon [--docker]    HTTP(S) flows like DevTools Network, 'httpmon trust' for TLS
+                   tcpdump -i any        raw capture
+Audio              alsamixer / wpctl     volume; wpctl status lists devices
+Updates            sudo apt update && sudo apt upgrade    (only from Nexus)
+                   sudo apt install <pkg>                 extras uploaded to Nexus
+Firewall           /etc/nftables.conf then: sudo systemctl reload nftables
+Docs               /usr/share/doc/ubuntu-lite/
+H

@@ -1,0 +1,8 @@
+# Docker images bundled on the ISO (seed/docker/*.tar), loaded into the
+# installed machine's docker store by the installer, and pushed to Nexus by
+# scripts/nexus-upload.sh. One image reference per line.
+node:22-slim
+python:3.12-slim
+postgres:16-alpine
+mitmproxy/mitmproxy:11
+hello-world:latest

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Google Chrome on native Wayland
+exec /opt/google/chrome/chrome --ozone-platform-hint=auto --enable-features=WaylandWindowDecorations "$@"
