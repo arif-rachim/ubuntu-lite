@@ -213,15 +213,19 @@ stage_packages() {
 	# shellcheck disable=SC2086
 	in_chroot apt-mark manual $list "linux-image-$KERNEL_FLAVOUR" $extra_pkg >/dev/null
 	# the lists are authoritative: purge manually installed packages that were removed from them
-	local unwanted
+	local unwanted protected
+	protected=$(in_chroot dpkg-query -W -f='${Package} ${Essential} ${Priority}\n' | awk '$2=="yes" || $3=="required" || $3=="important" {print $1}')
 	unwanted=$(comm -23 <(in_chroot apt-mark showmanual | sort -u) \
-		<(printf '%s\n' $list "linux-image-$KERNEL_FLAVOUR" $extra_pkg "linux-image-$kver" "linux-modules-$kver" apt ca-certificates | sort -u) \
+		<(printf '%s\n' $list $protected "linux-image-$KERNEL_FLAVOUR" $extra_pkg "linux-image-$kver" "linux-modules-$kver" | sort -u) \
 		| grep -vE '^(linux-(image|modules|headers)-|initramfs-tools|apt$|ca-certificates$)' || true)
 	if [ -n "$unwanted" ]; then
-		log "purging packages no longer listed: $(echo $unwanted | tr '\n' ' ')"
+		# mark as automatically installed; autoremove then drops whatever nothing depends on anymore
 		# shellcheck disable=SC2086
-		apt_chroot purge $unwanted
+		in_chroot apt-mark auto $unwanted >/dev/null
 	fi
+	local removable
+	removable=$(in_chroot apt-get -s autoremove 2>/dev/null | awk '/^Remv /{print $2}' | tr '\n' ' ')
+	[ -n "$removable" ] && log "removing packages no longer needed: $removable"
 	apt_chroot autoremove --purge
 
 	# collect every deb that went into the image
